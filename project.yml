@@ -1,0 +1,40 @@
+name: SayVoice
+options:
+  bundleIdPrefix: com.sayvoice
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+
+packages:
+  CWhisper:
+    path: Packages/CWhisper
+
+targets:
+  SayVoice:
+    type: application
+    platform: macOS
+    sources:
+      - path: SayVoice
+        excludes:
+          - Resources/Info.plist
+    dependencies:
+      - package: CWhisper
+        product: WhisperSwift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sayvoice.app
+        PRODUCT_NAME: SayVoice
+        INFOPLIST_FILE: SayVoice/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: SayVoice/Resources/SayVoice.entitlements
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: false
+        COMBINE_HIDPI_IMAGES: true

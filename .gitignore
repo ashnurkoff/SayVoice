@@ -1,0 +1,20 @@
+# Артефакты сборки
+build/
+DerivedData/
+*.o
+*.dia
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# macOS
+.DS_Store
+
+# Модели whisper не хранятся в репозитории: они весят сотни мегабайт
+# и скачиваются приложением при первом запуске.
+*.bin
+
+# Локальные настройки Claude Code
+.claude/settings.local.json
