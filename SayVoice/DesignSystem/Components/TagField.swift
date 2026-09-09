@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// Row height shared by chips, the input and the placeholder so the line
@@ -135,7 +134,9 @@ private struct TagChip: View {
         .padding(.trailing, 7)
         .frame(height: tagRowHeight)
         .background(Capsule().fill(DS.Colors.surface.color.opacity(isHovering ? 1 : 0.85)))
-        .overlay(Capsule().strokeBorder(DS.Colors.line.color, lineWidth: 1))
+        // The border steps up as well as the fill: in dark the fill change
+        // alone is almost invisible.
+        .overlay(Capsule().strokeBorder(isHovering ? DS.Colors.muted.color : DS.Colors.line.color, lineWidth: 1))
         .onHover { isHovering = $0 }
         .animation(DS.Motion.stateChange, value: isHovering)
     }

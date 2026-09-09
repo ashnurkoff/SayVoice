@@ -128,8 +128,15 @@ final class ComponentRenderTests: XCTestCase {
     }
 
     func testTagFieldRendersWithChips() {
-        let s = renderSize(TagField(text: .constant("API, deployment, SwiftUI"), placeholder: "Add term"), width: 480)
-        XCTAssertEqual(s.width, 480, accuracy: 0.5)
-        XCTAssertGreaterThan(s.height, 30)
+        for dark in [true, false] {
+            let empty = renderSize(TagField(text: .constant(""), placeholder: "Add term"), width: 480, dark: dark)
+            let chips = renderSize(TagField(text: .constant("API, deployment, SwiftUI"), placeholder: "Add term"), width: 480, dark: dark)
+            XCTAssertGreaterThan(empty.height, 30, "the field collapsed")
+            XCTAssertEqual(chips.width, 480, accuracy: 0.5)
+            // Chips make the field grow downwards, never sideways: the flow
+            // layout must wrap them inside the container it was given.
+            XCTAssertLessThanOrEqual(chips.width, empty.width)
+            XCTAssertGreaterThanOrEqual(chips.height, empty.height)
+        }
     }
 }
