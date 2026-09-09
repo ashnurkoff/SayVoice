@@ -34,6 +34,18 @@ final class ModelManager {
             }
         }
 
+        /// Same numbers as `fileSize`, with English units — for the rewritten
+        /// settings UI. `fileSize` stays as it is for the legacy screens.
+        var sizeText: String {
+            switch self {
+            case .base:    return "148 MB"
+            case .small:   return "488 MB"
+            case .turboQ5: return "574 MB"
+            case .turboQ8: return "874 MB"
+            case .turbo:   return "1.62 GB"
+            }
+        }
+
         var displayName: String {
             switch self {
             case .base:    return "Base"

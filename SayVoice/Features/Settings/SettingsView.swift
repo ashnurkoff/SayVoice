@@ -43,8 +43,10 @@ struct SettingsView: View {
         switch section {
         case .general:
             GeneralSection(settings: settings, onHotkeyChanged: onHotkeyChanged, onHotkeyModeChanged: onHotkeyModeChanged)
-        case .recognition, .dictionary, .insertion, .system:
-            PlaceholderSection(section: section)   // replaced in Tasks 7–8
+        case .recognition:
+            RecognitionSection(settings: settings, modelManager: modelManager, downloads: downloads, router: router)
+        case .dictionary, .insertion, .system:
+            PlaceholderSection(section: section)   // replaced in Task 8
         }
     }
 

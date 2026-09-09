@@ -31,4 +31,12 @@ final class SettingsRenderTests: XCTestCase {
             XCTAssertLessThanOrEqual(contentHeight(.general, dark: dark), SettingsView.windowSize.height, "General must fit in 600 pt")
         }
     }
+
+    func testRecognitionRendersAndMayScroll() {
+        for dark in [true, false] {
+            let h = contentHeight(.recognition, dark: dark)
+            XCTAssertGreaterThan(h, 200)
+            XCTAssertLessThan(h, 1200, "unexpectedly tall — check for a runaway layout")
+        }
+    }
 }
