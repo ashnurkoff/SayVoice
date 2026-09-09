@@ -80,7 +80,7 @@ Digits in `value` styles use tabular figures. Fonts are bundled under `Resources
 
 - Base unit 4. Spacing scale: 8 · 12 · 16 · 20 · 28.
 - Radii: 6 (small controls, key caps) · 10 (rows) · 14 (cards) · 18 (overlay card) · capsule (pills, orb).
-- Settings row height 44. Popover row min height 48.
+- Settings row: min height 44, 12 above and below, 4 between label and note, note capped at 60% of the row's width (amended 2026-09-09: rows whose note ran to several lines were cramped and the note ran up against the control). Popover row min height 48.
 - Elevation: cards `0 1px 2px black 12%`; overlay `0 20px 50px rgba(40,30,120,0.35)` on dark, `0 16px 40px black 18%` on light.
 
 ### 3.4 Motion
@@ -99,10 +99,10 @@ Rule of boundaries: a component knows nothing about `SettingsStore`, `ModelManag
 | `Orb` | Single state indicator used in overlay, popover header and status icon rendering | `Orb(state: .idle/.recording/.transcribing/.done/.error, size: CGFloat)` |
 | `GlassPanel` | Liquid Glass container with tokenised tint, border and highlight | `GlassPanel(shape: .capsule/.card) { content }` |
 | `Card` | Settings card with optional title/subtitle header | `Card(title:subtitle:) { rows }` |
-| `SettingsRow` | Label + optional note on the left, control on the right, 44pt | `SettingsRow("Show overlay", note: "…") { Toggle(…) }` |
+| `SettingsRow` | Label + optional note on the left, control on the right, min 44pt; 12pt above and below, 4pt between label and note, note capped at 60% of the row | `SettingsRow("Show overlay", note: "…") { Toggle(…) }` |
 | `Chip` | Small capsule label | `Chip("recommended", style: .neutral/.accent/.ok/.warn)` |
 | `KeyCap` | Monospace hotkey display | `KeyCap("⌃⌥⌘D")` |
-| `ModelRow` | Selectable model: name, 5-step quality bar, size, downloaded mark; hosts `DownloadProgress` inline | `ModelRow(model:isSelected:isDownloaded:download:onSelect:)` |
+| `ModelRow` | Selectable model: name, one-line purpose note, 5-step quality bar, size, downloaded mark; hosts `DownloadProgress` inline; `isCompact` tightens it for onboarding | `ModelRow(name:note:isSelected:isDownloaded:download:onSelect:)` |
 | `DownloadProgress` | Progress, speed, remaining, cancel, retry — one implementation for settings and onboarding | `DownloadProgress(state: .idle/.running(progress,bytesPerSec)/.failed(msg)/.done, onStart:onCancel:onRetry:)` |
 | `Waveform` | Live bars driven by level history; keeps the existing `BarEngine` smoothing | `Waveform(levels: [Float], bars: Int, tint:)` |
 | `TagField` | Existing chip editor, restyled to tokens | unchanged API |

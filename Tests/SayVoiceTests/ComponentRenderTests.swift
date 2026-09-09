@@ -69,6 +69,36 @@ final class ComponentRenderTests: XCTestCase {
         XCTAssertGreaterThan(s.height, 2 * DS.Size.settingsRow)
     }
 
+    /// Item 9 of the owner's first round: rows with a multi-line note were
+    /// cramped and the note ran all the way up to the control. The row now pays
+    /// 12 pt above and below, 4 pt between label and note, and the note wraps
+    /// inside 60% of the row.
+    func testSettingsRowBreathesAndCapsTheNoteWidth() {
+        let long = "Writes straight into the focused field through the accessibility API; the clipboard is untouched. "
+                 + "Works in native apps (TextEdit, Notes, Xcode, Safari). Chrome, Electron and Terminal do not expose it."
+        let width: CGFloat = 600
+        let rowWidth = width - 2 * DS.Space.s16
+
+        for dark in [true, false] {
+            let plain = renderSize(SettingsRow("Method") { Toggle("", isOn: .constant(true)).labelsHidden() },
+                                   width: width, dark: dark)
+            let noted = renderSize(SettingsRow("Method", note: long) { Toggle("", isOn: .constant(true)).labelsHidden() },
+                                   width: width, dark: dark)
+            XCTAssertEqual(plain.height, DS.Size.settingsRow, accuracy: 0.5, "a bare row keeps the 44 pt height")
+            XCTAssertGreaterThan(noted.height, plain.height)
+
+            // The note is laid out at the cap, not at whatever the control left over.
+            let cap = rowWidth * SettingsRowLayout.noteWidthFraction
+            let capped = renderSize(Text(long).font(DS.font(.caption)).fixedSize(horizontal: false, vertical: true),
+                                    width: cap, dark: dark)
+            let loose = renderSize(Text(long).font(DS.font(.caption)).fixedSize(horizontal: false, vertical: true),
+                                   width: rowWidth - 60, dark: dark)
+            XCTAssertGreaterThan(capped.height, loose.height, "precondition: the cap costs the note extra lines")
+            XCTAssertGreaterThanOrEqual(noted.height, capped.height + 2 * DS.Space.s12,
+                                        "the note wrapped wider than the cap, or the row lost its padding")
+        }
+    }
+
     func testDownloadProgressRendersEveryState() {
         let states: [DownloadState] = [.idle, .running(fraction: 0.34, bytesPerSecond: 12_400_000, secondsLeft: 38), .failed("The network connection was lost."), .done]
         for state in states {
