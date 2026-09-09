@@ -15,15 +15,15 @@ struct ArtPanel: View {
                 Spacer(minLength: 0)
                 Image(systemName: "waveform")
                     .font(.system(size: 88, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.95))
+                    .foregroundStyle(DS.Colors.onAccent.color.opacity(0.95))
                 Text("SayVoice")
                     .font(DS.font(.title))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DS.Colors.onAccent.color)
                 Spacer(minLength: 0)
                 HStack(spacing: 6) {
                     ForEach(OnboardingStep.allCases, id: \.self) { s in
                         Capsule()
-                            .fill(.white.opacity(s == step ? 0.95 : 0.35))
+                            .fill(DS.Colors.onAccent.color.opacity(s == step ? 0.95 : 0.35))
                             .frame(width: s == step ? 18 : 6, height: 6)
                     }
                 }

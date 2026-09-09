@@ -63,4 +63,81 @@ final class ModelCatalogTests: XCTestCase {
             )
         }
     }
+
+    // MARK: - HTTP status
+
+    /// A 404 is a perfectly successful transfer whose body is an error page.
+    /// Moving that into place would publish it as a model, and whisper would
+    /// then fail to load a file the app reports as downloaded.
+    @MainActor
+    func testAnErrorStatusFailsTheDownloadAndLeavesNothingOnDisk() async {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = ModelManager(modelsDirectory: directory,
+                                   sessionConfiguration: Self.configuration(with: NotFoundURLProtocol.self))
+
+        var thrown: Error?
+        do {
+            for try await _ in manager.downloadModelProgress(.base) {}
+        } catch {
+            thrown = error
+        }
+
+        XCTAssertNotNil(thrown, "a 404 must end the stream with an error, not with a model")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: manager.modelURL(for: .base).path),
+                       "the error page was published as a model file")
+    }
+
+    /// The counterpart: a 200 still finishes and publishes the file, so the
+    /// status check cannot be satisfied by rejecting everything.
+    @MainActor
+    func testASuccessfulStatusPublishesTheFile() async {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = ModelManager(modelsDirectory: directory,
+                                   sessionConfiguration: Self.configuration(with: OKURLProtocol.self))
+
+        do {
+            for try await _ in manager.downloadModelProgress(.base) {}
+        } catch {
+            return XCTFail("a 200 must not throw: \(error)")
+        }
+        XCTAssertTrue(manager.isModelAvailable(.base), "a completed transfer must leave the file in place")
+    }
+
+    private static func configuration(with stub: URLProtocol.Type) -> URLSessionConfiguration {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [stub]
+        return configuration
+    }
+}
+
+/// Answers every request with a canned response, so the download path can be
+/// exercised without a network.
+class StubURLProtocol: URLProtocol {
+    /// Status of the canned response; the body is a short stand-in payload.
+    class var status: Int { 200 }
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func stopLoading() {}
+
+    override func startLoading() {
+        let body = Data("stub payload".utf8)
+        let response = HTTPURLResponse(
+            url: request.url!, statusCode: Self.status, httpVersion: "HTTP/1.1",
+            headerFields: ["Content-Length": String(body.count)]
+        )!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: body)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+}
+
+final class NotFoundURLProtocol: StubURLProtocol {
+    override class var status: Int { 404 }
+}
+
+final class OKURLProtocol: StubURLProtocol {
+    override class var status: Int { 200 }
 }

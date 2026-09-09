@@ -42,7 +42,7 @@ final class AppCoordinator {
         }
         menuBarController?.onPopoverWillShow = { [weak self] in
             guard let self else { return }
-            self.menuBarController?.historyEntries = self.historyStore.recent()
+            self.menuBarController?.historyEntries = self.historyStore.entries
         }
 
         overlayController = OverlayWindowController()
@@ -178,7 +178,7 @@ final class AppCoordinator {
                 let lang = settingsStore.language == "auto" ? nil : settingsStore.language
                 let entry = TranscriptionEntry(text: text, durationSeconds: durationSec, language: lang)
                 historyStore.append(entry)
-                menuBarController?.historyEntries = historyStore.recent()
+                menuBarController?.historyEntries = historyStore.entries
 
                 state = .injecting
                 if settingsStore.overlayEnabled {

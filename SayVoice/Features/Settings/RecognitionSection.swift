@@ -33,7 +33,10 @@ struct RecognitionSection: View {
                                     router.highlightedModel = nil
                                 },
                                 onCancel: { downloads.cancel(model) },
-                                onRetry: { downloads.start(model) }
+                                onRetry: {
+                                    downloads.start(model)
+                                    router.highlightedModel = nil
+                                }
                             )
                         }
                     }

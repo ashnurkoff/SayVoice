@@ -5,32 +5,32 @@ import SwiftUI
 /// Components live in `DesignSystem/Components` and use only these tokens.
 enum DS {}
 
-/// A colour with one value per appearance. Stored as plain numbers so the
-/// value is `Sendable` and safe as a global constant under strict
-/// concurrency; the `NSColor` is built on access, which is cheap.
+/// A colour with one value per appearance. The hex values are kept so
+/// `resolved(for:)` can hand AppKit a concrete colour, and the SwiftUI
+/// `Color` — dynamic, and `Sendable`, unlike the `NSColor` behind it — is
+/// built once in `init` rather than on every access: these tokens are read on
+/// every body evaluation of every view.
 struct DSColor: Sendable {
     let darkHex: UInt32
     let darkAlpha: Double
     let lightHex: UInt32
     let lightAlpha: Double
 
+    /// Dynamic colour that follows the effective appearance of the view it is drawn in.
+    let color: Color
+
     init(dark: UInt32, light: UInt32, darkAlpha: Double = 1, lightAlpha: Double = 1) {
         self.darkHex = dark
         self.darkAlpha = darkAlpha
         self.lightHex = light
         self.lightAlpha = lightAlpha
-    }
 
-    /// Dynamic colour that follows the effective appearance of the view it is drawn in.
-    var nsColor: NSColor {
-        let dark = Self.make(darkHex, darkAlpha)
-        let light = Self.make(lightHex, lightAlpha)
-        return NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
-        }
+        let darkColor = Self.make(dark, darkAlpha)
+        let lightColor = Self.make(light, lightAlpha)
+        self.color = Color(nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? darkColor : lightColor
+        })
     }
-
-    var color: Color { Color(nsColor: nsColor) }
 
     /// Concrete colour for a given appearance — for tests and for AppKit
     /// drawing code that resolves colours itself (status icons).
@@ -69,6 +69,9 @@ extension DS {
         static let accent     = DSColor(dark: 0x7B7FF2, light: 0x5B5FD6)
         static let accent2    = DSColor(dark: 0xA78BFA, light: 0x8B5CF6)
         static let accentSoft = DSColor(dark: 0x7B7FF2, light: 0x5B5FD6, darkAlpha: 0.16, lightAlpha: 0.12)
+        /// Text and glyphs drawn on the accent fill or gradient. White in both
+        /// appearances — the accent is dark enough for white in either.
+        static let onAccent   = DSColor(dark: 0xFFFFFF, light: 0xFFFFFF)
 
         // Semantic — separate from the accent
         static let rec  = DSColor(dark: 0xF5636F, light: 0xE8465A)

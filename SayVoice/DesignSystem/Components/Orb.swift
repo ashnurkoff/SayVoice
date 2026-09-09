@@ -69,11 +69,11 @@ struct Orb: View {
     @ViewBuilder private var glyph: some View {
         switch state {
         case .done:
-            Image(systemName: "checkmark").font(.system(size: size * 0.42, weight: .bold)).foregroundStyle(.white)
+            Image(systemName: "checkmark").font(.system(size: size * 0.42, weight: .bold)).foregroundStyle(DS.Colors.onAccent.color)
         case .error:
-            Image(systemName: "exclamationmark").font(.system(size: size * 0.42, weight: .bold)).foregroundStyle(.white)
+            Image(systemName: "exclamationmark").font(.system(size: size * 0.42, weight: .bold)).foregroundStyle(DS.Colors.onAccent.color)
         case .recording:
-            Circle().fill(.white).frame(width: size * 0.3, height: size * 0.3)
+            Circle().fill(DS.Colors.onAccent.color).frame(width: size * 0.3, height: size * 0.3)
         case .idle, .transcribing:
             EmptyView()
         }

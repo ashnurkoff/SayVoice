@@ -51,7 +51,7 @@ struct LogoMark: View {
             .overlay(
                 Image(systemName: "waveform")
                     .font(.system(size: size * 0.45, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DS.Colors.onAccent.color)
             )
             .shadow(color: DS.Colors.glassShadow.color, radius: 6, x: 0, y: 3)
             .accessibilityLabel("SayVoice")

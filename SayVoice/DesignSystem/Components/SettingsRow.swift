@@ -21,15 +21,19 @@ struct SettingsRow<Control: View>: View {
                 if let note { Text(note).font(DS.font(.caption)).foregroundStyle(DS.Colors.muted.color) }
             }
             Spacer(minLength: DS.Space.s12)
-            control()
+            // The label rides on the control rather than on the row, so a
+            // segmented or menu picker keeps a VoiceOver element per option.
+            Group { control() }
+                .accessibilityLabel(label)
         }
         .padding(.horizontal, DS.Space.s16)
         .frame(minHeight: DS.Size.settingsRow)
         .overlay(alignment: .top) {
             Rectangle().fill(DS.Colors.line.color).frame(height: 1).padding(.leading, DS.Space.s16)
         }
-        // One element per row, so VoiceOver reads a toggle together with the
-        // label it belongs to instead of announcing a bare switch.
-        .accessibilityElement(children: .combine)
+        // A container, not one merged element: a toggle still announces the
+        // label it belongs to (the control carries it), while the options of a
+        // picker stay reachable one by one — merging swallowed them.
+        .accessibilityElement(children: .contain)
     }
 }

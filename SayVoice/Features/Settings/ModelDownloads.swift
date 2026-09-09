@@ -8,6 +8,9 @@ final class ModelDownloads {
     private let isAvailable: @MainActor (ModelManager.ModelSize) -> Bool
     private var states: [ModelManager.ModelSize: DownloadState] = [:]
     private var tasks: [ModelManager.ModelSize: Task<Void, Never>] = [:]
+    /// Bumped by every start and every cancel. A run whose generation is no
+    /// longer the current one has been superseded and may not touch the state.
+    private var generations: [ModelManager.ModelSize: Int] = [:]
 
     /// Called when a download finishes successfully.
     var onCompleted: ((ModelManager.ModelSize) -> Void)?
@@ -51,12 +54,15 @@ final class ModelDownloads {
 
     func start(_ size: ModelManager.ModelSize) {
         guard tasks[size] == nil else { return }
+        let generation = (generations[size] ?? 0) + 1
+        generations[size] = generation
         states[size] = .running(fraction: 0, bytesPerSecond: nil, secondsLeft: nil)
         tasks[size] = Task { [self] in
             // The speed is averaged over a rolling window rather than the last
             // two samples, so one slow chunk does not halve the number on screen.
             var window: [(bytes: Int64, at: TimeInterval)] = []
             var lastWrite: TimeInterval = 0
+            var outcome: (cancelled: Bool, message: String?)
             do {
                 for try await p in progressSource(size) {
                     let now = Date().timeIntervalSinceReferenceDate
@@ -72,21 +78,31 @@ final class ModelDownloads {
                     lastWrite = now
                     states[size] = .running(fraction: p.fraction, bytesPerSecond: speed, secondsLeft: eta)
                 }
-                settle(size, cancelled: false, message: nil)
+                outcome = (cancelled: false, message: nil)
             } catch is CancellationError {
-                settle(size, cancelled: true, message: nil)
+                outcome = (cancelled: true, message: nil)
             } catch {
                 // The transfer's cancellation error type is not contractual —
                 // URLSession surfaces `URLError(.cancelled)` — so cancellation
                 // is decided by the task, not by the error.
-                settle(size, cancelled: false, message: error.localizedDescription)
+                outcome = (cancelled: false, message: error.localizedDescription)
             }
+            // Cancel freed the slot at once and a retry may already be running:
+            // this run's outcome belongs to a transfer that is over, so it must
+            // touch neither the state nor the slot.
+            guard generations[size] == generation else { return }
+            settle(size, cancelled: outcome.cancelled, message: outcome.message)
             tasks[size] = nil
         }
     }
 
     func cancel(_ size: ModelManager.ModelSize) {
         guard let task = tasks[size] else { return }
+        // Free the slot before cancelling, so the next Retry starts at once
+        // instead of waiting for the transfer to unwind; the generation bump
+        // makes the unwinding run ignore its own outcome.
+        tasks[size] = nil
+        generations[size] = (generations[size] ?? 0) + 1
         task.cancel()
         // Show it at once — the transfer unwinds a moment later.
         states[size] = .idle

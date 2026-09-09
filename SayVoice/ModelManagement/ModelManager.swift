@@ -119,8 +119,14 @@ final class ModelManager {
 
     let modelsDirectory: URL
 
-    init(modelsDirectory: URL = ModelManager.defaultModelsDirectory) {
+    /// Configuration of the download session. Tests inject one carrying a
+    /// `URLProtocol` stub so the transfer path can be exercised offline.
+    private let sessionConfiguration: URLSessionConfiguration
+
+    init(modelsDirectory: URL = ModelManager.defaultModelsDirectory,
+         sessionConfiguration: URLSessionConfiguration = .default) {
         self.modelsDirectory = modelsDirectory
+        self.sessionConfiguration = sessionConfiguration
     }
 
     func modelURL(for size: ModelSize) -> URL {
@@ -141,6 +147,7 @@ final class ModelManager {
         let directory = modelsDirectory
         let finalURL = modelURL(for: size)
         let url = size.downloadURL
+        let configuration = sessionConfiguration
 
         return AsyncThrowingStream { continuation in
             do {
@@ -154,7 +161,7 @@ final class ModelManager {
             // location and hands it over only once the transfer completed, so
             // there is no half-written model to clean up after a cancel.
             let relay = DownloadRelay(finalURL: finalURL, continuation: continuation)
-            let session = URLSession(configuration: .default, delegate: relay, delegateQueue: nil)
+            let session = URLSession(configuration: configuration, delegate: relay, delegateQueue: nil)
             let task = session.downloadTask(with: url)
             relay.adopt(session: session, task: task)
             continuation.onTermination = { [relay] _ in relay.cancelAndInvalidate() }
@@ -220,6 +227,13 @@ private final class DownloadRelay: NSObject, URLSessionDownloadDelegate, @unchec
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        // A 404 or a 500 is a perfectly successful transfer whose body is an
+        // error page. Checked before anything is touched on disk, so a failed
+        // retry cannot delete the model that is already installed.
+        if let http = downloadTask.response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            continuation.finish(throwing: URLError(.badServerResponse))
+            return
+        }
         // The system deletes `location` as soon as this returns, so the move
         // has to happen here rather than on another queue.
         do {

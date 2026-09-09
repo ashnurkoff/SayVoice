@@ -8,7 +8,7 @@ struct DSPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(DS.font(.bodyMedium))
-            .foregroundStyle(.white)
+            .foregroundStyle(DS.Colors.onAccent.color)
             .padding(.horizontal, DS.Space.s16)
             .padding(.vertical, DS.Space.s8)
             .background(
@@ -30,11 +30,11 @@ struct DSSecondaryButtonStyle: ButtonStyle {
             .padding(.horizontal, DS.Space.s12)
             .padding(.vertical, 6)
             .background(
-                RoundedRectangle(cornerRadius: DS.Radius.control + 2, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                     .fill(DS.Colors.surface2.color)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: DS.Radius.control + 2, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                     .strokeBorder(DS.Colors.line.color, lineWidth: 1)
             )
             .opacity(configuration.isPressed ? 0.8 : (isEnabled ? 1 : 0.45))

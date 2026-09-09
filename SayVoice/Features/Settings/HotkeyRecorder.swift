@@ -21,6 +21,11 @@ struct HotkeyRecorder: View {
     @State private var pendingModifier: CGKeyCode?
     @State private var sawKeyDown = false
 
+    /// The window the recorder was armed in. Recording is armed by a click on
+    /// the field, so the key window at that moment is the recorder's own — and
+    /// it is the only window whose closing must stop the monitor.
+    @State private var hostWindow: NSWindow?
+
     var body: some View {
         VStack(alignment: .trailing, spacing: 6) {
             HStack(spacing: DS.Space.s8) {
@@ -56,8 +61,14 @@ struct HotkeyRecorder: View {
         }
         .onDisappear(perform: stopRecording)
         // A local monitor swallows keys, so it must never outlive the window:
-        // onDisappear alone does not always fire when the window closes.
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { _ in stopRecording() }
+        // onDisappear alone does not always fire when the window closes. Only
+        // this recorder's own window counts — the overlay or another settings
+        // sheet closing must not disarm a recording in progress.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { note in
+            guard isRecording else { return }
+            guard let hostWindow else { return stopRecording() }
+            if (note.object as? NSWindow) === hostWindow { stopRecording() }
+        }
     }
 
     // MARK: - Recording
@@ -65,6 +76,7 @@ struct HotkeyRecorder: View {
     private func toggleRecording() { isRecording ? stopRecording() : startRecording() }
 
     private func startRecording() {
+        hostWindow = NSApp.keyWindow
         rejection = nil
         pendingModifier = nil
         sawKeyDown = false
@@ -78,6 +90,7 @@ struct HotkeyRecorder: View {
     private func stopRecording() {
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
+        hostWindow = nil
         isRecording = false
         pendingModifier = nil
         sawKeyDown = false

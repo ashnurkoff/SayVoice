@@ -77,6 +77,31 @@ final class SettingsLogicTests: XCTestCase {
         }, "the task slot was never freed, so the model could not be downloaded again")
     }
 
+    /// The slot must be free the instant Cancel returns, not once the transfer
+    /// unwinds: the user's next click is Retry, and it lands synchronously.
+    func testCancelFreesTheTaskSlotSynchronously() async {
+        let source = StubProgressSource()
+        let downloads = makeDownloads(source: source, available: false)
+
+        downloads.start(.base)
+        await waitUntil({ source.continuation != nil }, "the task never asked for a stream")
+        source.continuation?.yield(ModelDownloadProgress(bytesReceived: 10, totalBytes: 100))
+        await waitUntil({ Self.fraction(downloads.state(for: .base)) == 0.1 }, "progress not observed")
+
+        downloads.cancel(.base)
+        downloads.start(.base)
+        guard case .running = downloads.storedState(for: .base) else {
+            return XCTFail("a start right after cancel must run at once, got \(String(describing: downloads.storedState(for: .base)))")
+        }
+
+        // The cancelled transfer settles a moment later; its outcome belongs to
+        // a run that is over and must not overwrite the one now in flight.
+        try? await Task.sleep(for: .milliseconds(120))
+        guard case .running = downloads.storedState(for: .base) else {
+            return XCTFail("the cancelled run stomped the new one: \(String(describing: downloads.storedState(for: .base)))")
+        }
+    }
+
     func testStreamEndWithTheFileOnDiskIsDoneAndReportsCompletionOnce() async {
         let source = StubProgressSource()
         let downloads = makeDownloads(source: source, available: true)

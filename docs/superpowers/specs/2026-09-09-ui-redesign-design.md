@@ -44,6 +44,7 @@ Every role has a dark and a light value. Components never use literals — only 
 | `accent` | `#7B7FF2` | `#5B5FD6` | Brand; see the three-places rule |
 | `accent2` | `#A78BFA` | `#8B5CF6` | Gradient partner of `accent` (orb, logo only) |
 | `accentSoft` | accent 16% | accent 12% | Selected row fill, key cap fill |
+| `onAccent` | #FFFFFF | #FFFFFF | Text and glyphs on the accent gradient |
 | `rec` | `#F5636F` | `#E8465A` | Recording state |
 | `ok` | `#3ECF8E` | `#22A86B` | Success, "downloaded" |
 | `warn` | `#E0A34A` | `#C4842A` | Warnings, recoverable errors |
@@ -166,7 +167,7 @@ The separate window and `ModelDownloadView.swift` are removed. When the selected
 
 ```
 SayVoice/
-  App/                    SayVoiceApp · AppCoordinator · AppState · AppWindow (new helper)
+  App/                    SayVoiceApp · AppCoordinator · AppState · AppStatus · AppWindow (new helper)
   DesignSystem/
     Tokens/               Colors.swift · Typography.swift · Spacing.swift · Motion.swift
     Components/           Orb · GlassPanel · Card · SettingsRow · Chip · KeyCap · ModelRow
@@ -174,16 +175,19 @@ SayVoice/
   Features/
     Settings/             SettingsView · SettingsRail · GeneralSection · RecognitionSection
                           DictionarySection · InsertionSection · SystemSection · LicensesSheet
-                          HotkeyRecorder
+                          HotkeyRecorder · ModelDownloads · SettingsRouter · SettingsSection
+                          SectionHeader
     Overlay/              OverlayWindowController · OverlayModel · OverlayView
                           RecordingContent · TranscribingContent · ResultContent · ErrorContent
-    Onboarding/           OnboardingView · ArtPanel · WelcomeStep · PermissionsStep · ModelStep · HotkeyStep
-    History/              HistoryPopover · HistoryRow
+    Onboarding/           OnboardingView · OnboardingModel · ArtPanel · WelcomeStep
+                          PermissionsStep · ModelStep · HotkeyStep
+    History/              HistoryPopover · HistoryRow · HistoryFilter · RelativeTime
     MenuBar/              MenuBarController · StatusIcon
   Audio/ Transcription/ TextInjection/ HotkeyListener/ Permissions/ ModelManagement/ History/ Settings/
                           unchanged (ModelDownloadView.swift removed from ModelManagement)
   Resources/
     Fonts/                Onest-*.ttf · JetBrainsMono-*.ttf · OFL.txt for each
+    Licenses/             whisper.cpp-LICENSE.txt
 ```
 
 - `DesignSystem` has no imports from `Features`, `App` or any store — it depends only on SwiftUI/AppKit. Enforced by review.
@@ -225,7 +229,7 @@ All files created or rewritten by this work are in English: UI strings, comments
 5. History popover and menu bar icons/menu.
 6. `AppWindow` helper, deletions, `.xcodeproj` out of git, README note, screenshot script, screenshots committed.
 
-Each stage ends with a build, an install, a live check and a commit.
+Each stage ends with a build, the test suite and a commit; the owner installs once at the end of the redesign and runs the live checks listed in the final report.
 
 ## 11. References
 
