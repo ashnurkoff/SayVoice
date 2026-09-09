@@ -17,6 +17,7 @@ final class ModelCatalogTests: XCTestCase {
     func testRecommendedIsTurboQ5AndIsTheStoreDefault() {
         XCTAssertEqual(ModelManager.ModelSize.recommended, .turboQ5)
         XCTAssertEqual(ModelManager.ModelSize(settingsString: "large-v3-turbo-q5"), .turboQ5)
+        XCTAssertEqual(ModelManager.ModelSize.recommended.settingsString, "large-v3-turbo-q5")
     }
 
     func testProgressFractionIsClampedAndSafe() {
@@ -31,6 +32,8 @@ final class ModelCatalogTests: XCTestCase {
         // (AsyncThrowingStream ends on cancellation) or as an error — instead
         // of hanging on the connection until the transfer finishes.
         let manager = ModelManager()
+        let finalURL = manager.modelURL(for: .base)
+        let existedBefore = FileManager.default.fileExists(atPath: finalURL.path)
         let task = Task { () -> String in
             var count = 0
             do {
@@ -46,5 +49,14 @@ final class ModelCatalogTests: XCTestCase {
         let result = await task.value
         let waited = Date().timeIntervalSince(cancelledAt)
         XCTAssertLessThan(waited, 3, "stream kept running \(waited)s after cancel (\(result))")
+
+        // Cancelling must not fall through to the finalise-and-move step: a
+        // truncated ggml-base.bin would be reported as a usable model.
+        if !existedBefore {
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: finalURL.path),
+                "a cancelled download published a model file at \(finalURL.path) (\(result))"
+            )
+        }
     }
 }

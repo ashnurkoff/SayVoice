@@ -135,8 +135,9 @@ final class ModelManager {
     }
 
     /// Streams byte-level progress. Cancelling the consuming task stops the
-    /// transfer and removes the partial file; the stream then ends with
-    /// `CancellationError`.
+    /// transfer and removes the partial file; the stream then simply finishes
+    /// (iteration returns `nil`), so completion must be confirmed with
+    /// `isModelAvailable(_:)` rather than inferred from the stream ending.
     func downloadModelProgress(_ size: ModelSize) -> AsyncThrowingStream<ModelDownloadProgress, Error> {
         let directory = Self.modelsDirectory
         let fileName = size.fileName
@@ -193,7 +194,9 @@ final class ModelManager {
     }
 
     /// Fraction-only view of `downloadModelProgress`, kept for the onboarding
-    /// step until Phase 3 replaces it.
+    /// step until Phase 3 replaces it. It inherits the same caveat: a cancelled
+    /// consumer sees the stream finish rather than throw, so confirm completion
+    /// with `isModelAvailable(_:)`.
     func downloadModel(_ size: ModelSize) -> AsyncThrowingStream<Double, Error> {
         let source = downloadModelProgress(size)
         return AsyncThrowingStream { continuation in

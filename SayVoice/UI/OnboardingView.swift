@@ -29,7 +29,7 @@ struct OnboardingView: View {
                 AccessibilityStepView(
                     permissionManager: permissionManager,
                     onNext: {
-                        step = modelManager.isModelAvailable(.small) ? .complete : .modelDownload
+                        step = modelManager.isModelAvailable(.recommended) ? .complete : .modelDownload
                     }
                 )
             case .modelDownload:
@@ -279,7 +279,7 @@ private struct ModelDownloadStepView: View {
 
         Task {
             do {
-                for try await p in modelManager.downloadModel(.small) {
+                for try await p in modelManager.downloadModel(.recommended) {
                     progress = p
                 }
                 onNext()
