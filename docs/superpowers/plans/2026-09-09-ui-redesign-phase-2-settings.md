@@ -2013,6 +2013,7 @@ Expected: the five "no …"/"in sync" lines.
 - §3.4: replace "Overlay result auto-dismiss: 2 s, cancelled while the pointer is over the panel." with "Overlay result auto-dismiss: 2 s, paused while the pointer is over the panel (at most 10 s). Error cards: 3 s, or 8 s when they carry an action; tapping the action dismisses."
 - §5.1, after the Recognition bullet, add: "The default model on a fresh install is Large Turbo Q5 (`ModelSize.recommended`)."
 - §6 folder tree: move `HotkeyRecorder.swift` from `DesignSystem/Components/` to `Features/Settings/` (it depends on the `Hotkey` type); add `TagField.swift` under `DesignSystem/Components/` if it is not listed there.
+- §4, the sentence listing removed components (`Badge`, `TagChip`, `StopButton` …): remove `TagChip` from that list — it stays private to `TagField`.
 - §7 (component consolidation): the line saying `TagChip` → `Chip` becomes "`TagChip` stays private to `TagField` — a removable chip with a hover state is not a `Chip`; both use the same tokens."
 - §5.5: replace the paragraph with: "The separate window and `ModelDownloadView.swift` are removed. When the selected model is missing at launch or at transcription time, the app opens Settings → Recognition with that model's row outlined (`warn` border) and its `DownloadProgress` ready; `ModelDownloads` owns the transfer and cancellation. Onboarding (Phase 3) uses the same component and coordinator."
 
