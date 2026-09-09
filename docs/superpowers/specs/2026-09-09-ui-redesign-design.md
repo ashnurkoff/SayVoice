@@ -55,7 +55,7 @@ Every role has a dark and a light value. Components never use literals — only 
 | `okHighlight` | `#8CEDB8` | `#8CEDB8` | Orb gradient highlight (done) |
 | `warnHighlight` | `#F7C773` | `#F7C773` | Orb gradient highlight (error) |
 
-**Three-places rule.** `accent` appears only as: (1) the orb and the logo, (2) the active control — selected row, on-state toggle, focused field border, (3) the glass border of the overlay. Headings, section icons, badges and body text are neutral. Semantic colours (`rec`, `ok`, `warn`) are not the accent and do not count against the rule.
+**Three-places rule.** `accent` appears only as: (1) the orb and the logo, (2) the active or interactive control — selected row, on-state toggle, focused field border, and text actions (`.dsLink`, `.dsPrimary`), (3) the overlay glass — its border and its 10% tint. Headings, section icons, badges, body text, progress bars and dividers are neutral. Semantic colours (`rec`, `ok`, `warn`) are not the accent and do not count against the rule.
 
 Exactly three text levels exist. If a fourth seems necessary, the layout is wrong.
 

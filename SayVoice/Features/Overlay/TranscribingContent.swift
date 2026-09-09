@@ -14,7 +14,7 @@ struct TranscribingContent: View {
 
             ProgressView()
                 .progressViewStyle(.linear)
-                .tint(DS.Colors.accent.color)
+                .tint(DS.Colors.muted.color)
                 .frame(height: 22)
         }
     }
