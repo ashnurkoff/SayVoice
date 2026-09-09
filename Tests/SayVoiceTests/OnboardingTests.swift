@@ -20,7 +20,7 @@ final class OnboardingTests: XCTestCase {
     func makeModel(mic: Bool = false, ax: Bool = false, onFinished: @escaping () -> Void = {}) -> (OnboardingModel, FakePermissions) {
         let p = FakePermissions(); p.mic = mic; p.ax = ax
         let manager = ModelManager()
-        let m = OnboardingModel(permissions: p, settings: SettingsStore(), modelManager: manager,
+        let m = OnboardingModel(permissions: p, settings: SettingsStore(defaults: TestDefaults.ephemeral()), modelManager: manager,
                                 downloads: ModelDownloads(modelManager: manager), onFinished: onFinished)
         return (m, p)
     }
@@ -240,7 +240,7 @@ final class OnboardingTests: XCTestCase {
     ) -> OnboardingModel {
         let manager = ModelManager(modelsDirectory: temporaryModelsDirectory())
         let permissions = FakePermissions(); permissions.mic = granted; permissions.ax = granted
-        return OnboardingModel(permissions: permissions, settings: SettingsStore(), modelManager: manager,
+        return OnboardingModel(permissions: permissions, settings: SettingsStore(defaults: TestDefaults.ephemeral()), modelManager: manager,
                                downloads: downloads(manager), onFinished: {})
     }
 

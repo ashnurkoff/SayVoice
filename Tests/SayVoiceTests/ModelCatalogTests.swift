@@ -110,34 +110,36 @@ final class ModelCatalogTests: XCTestCase {
         configuration.protocolClasses = [stub]
         return configuration
     }
-}
 
-/// Answers every request with a canned response, so the download path can be
-/// exercised without a network.
-class StubURLProtocol: URLProtocol {
-    /// Status of the canned response; the body is a short stand-in payload.
-    class var status: Int { 200 }
+    // MARK: - URL protocol stubs
 
-    override class func canInit(with request: URLRequest) -> Bool { true }
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-    override func stopLoading() {}
+    /// Answers every request with a canned response, so the download path can be
+    /// exercised without a network.
+    class StubURLProtocol: URLProtocol {
+        /// Status of the canned response; the body is a short stand-in payload.
+        class var status: Int { 200 }
 
-    override func startLoading() {
-        let body = Data("stub payload".utf8)
-        let response = HTTPURLResponse(
-            url: request.url!, statusCode: Self.status, httpVersion: "HTTP/1.1",
-            headerFields: ["Content-Length": String(body.count)]
-        )!
-        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: body)
-        client?.urlProtocolDidFinishLoading(self)
+        override class func canInit(with request: URLRequest) -> Bool { true }
+        override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+        override func stopLoading() {}
+
+        override func startLoading() {
+            let body = Data("stub payload".utf8)
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: Self.status, httpVersion: "HTTP/1.1",
+                headerFields: ["Content-Length": String(body.count)]
+            )!
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: body)
+            client?.urlProtocolDidFinishLoading(self)
+        }
     }
-}
 
-final class NotFoundURLProtocol: StubURLProtocol {
-    override class var status: Int { 404 }
-}
+    final class NotFoundURLProtocol: StubURLProtocol {
+        override class var status: Int { 404 }
+    }
 
-final class OKURLProtocol: StubURLProtocol {
-    override class var status: Int { 200 }
+    final class OKURLProtocol: StubURLProtocol {
+        override class var status: Int { 200 }
+    }
 }

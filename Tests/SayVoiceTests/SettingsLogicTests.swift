@@ -159,6 +159,66 @@ final class SettingsLogicTests: XCTestCase {
         w.close()
     }
 
+    // MARK: - SettingsStore
+
+    /// The store is what the screenshots and the layout tests read, so an empty
+    /// suite must produce exactly the documented defaults — not whatever the
+    /// person running the suite has configured.
+    func testAFreshSuiteYieldsTheDocumentedDefaults() {
+        let settings = SettingsStore(defaults: TestDefaults.ephemeral())
+
+        XCTAssertEqual(settings.hotkey, Hotkey.default, "the default hotkey is Right ⌥")
+        XCTAssertEqual(settings.hotkeyMode, "hold")
+        XCTAssertFalse(settings.hotkeyIsToggle)
+        XCTAssertEqual(settings.modelSize, ModelManager.ModelSize.recommended.settingsString)
+        XCTAssertEqual(settings.language, "auto")
+        XCTAssertEqual(settings.pasteMethod, "pasteboard")
+        XCTAssertTrue(settings.overlayEnabled)
+        XCTAssertTrue(settings.soundFeedback)
+        XCTAssertTrue(settings.restorePasteboard)
+        XCTAssertFalse(settings.launchAtLogin)
+        XCTAssertFalse(settings.hasCompletedOnboarding)
+        XCTAssertEqual(settings.vocabularyPrompt, SettingsStore.defaultVocabularyPrompt)
+    }
+
+    /// `init` does not only read: the legacy-prompt migration writes. It must
+    /// write into the suite it was given — a store built for a test must never
+    /// reach into the settings of whoever runs the suite.
+    func testTheLegacyPromptMigrationWritesToTheInjectedSuite() {
+        let defaults = TestDefaults.ephemeral()
+        defaults.set(SettingsStore.legacyRussianVocabularyPrompt, forKey: SettingsKeys.vocabularyPrompt)
+        let standardBefore = UserDefaults.standard.string(forKey: SettingsKeys.vocabularyPrompt)
+
+        let settings = SettingsStore(defaults: defaults)
+
+        XCTAssertEqual(settings.vocabularyPrompt, SettingsStore.defaultVocabularyPrompt,
+                       "the legacy Russian prompt must be replaced")
+        XCTAssertEqual(defaults.string(forKey: SettingsKeys.vocabularyPrompt), SettingsStore.defaultVocabularyPrompt,
+                       "the migration must persist into the injected suite")
+        XCTAssertEqual(UserDefaults.standard.string(forKey: SettingsKeys.vocabularyPrompt), standardBefore,
+                       "the migration wrote through to UserDefaults.standard")
+    }
+
+    /// The other half of the migration: a prompt the user wrote is theirs.
+    func testACustomPromptSurvivesTheMigration() {
+        let defaults = TestDefaults.ephemeral()
+        defaults.set("Kubernetes, gRPC", forKey: SettingsKeys.vocabularyPrompt)
+
+        XCTAssertEqual(SettingsStore(defaults: defaults).vocabularyPrompt, "Kubernetes, gRPC")
+    }
+
+    /// A write goes to the injected suite and nowhere else.
+    func testWritingASettingGoesToTheInjectedSuite() {
+        let defaults = TestDefaults.ephemeral()
+        let standardBefore = UserDefaults.standard.string(forKey: SettingsKeys.language)
+
+        let settings = SettingsStore(defaults: defaults)
+        settings.language = "en"
+
+        XCTAssertEqual(defaults.string(forKey: SettingsKeys.language), "en")
+        XCTAssertEqual(UserDefaults.standard.string(forKey: SettingsKeys.language), standardBefore)
+    }
+
     // MARK: - Helpers
 
     /// A models directory of its own, removed after the test: the suite never

@@ -108,7 +108,7 @@ Scripts/render-surfaces   Regenerates docs/screenshots
 xcodebuild -project SayVoice.xcodeproj -scheme SayVoice -derivedDataPath build test
 ```
 
-The suite is offline and needs no microphone: logic tests, layout-fitting tests and off-screen render tests for every surface in both themes.
+The suite needs no microphone; one download test touches the network for a fraction of a second. Logic tests, layout-fitting tests and off-screen render tests for every surface in both themes.
 
 ## Screenshots
 

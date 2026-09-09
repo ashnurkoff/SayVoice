@@ -6,7 +6,7 @@ import XCTest
 final class SettingsRenderTests: XCTestCase {
 
     func makeView(section: SettingsSection) -> SettingsView {
-        let settings = SettingsStore()
+        let settings = SettingsStore(defaults: TestDefaults.ephemeral())
         let status = AppStatus(); status.modelName = "Large Turbo Q5"
         let router = SettingsRouter(); router.section = section
         // A temp models directory keeps the rendered rows the same on any Mac,

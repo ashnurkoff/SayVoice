@@ -9,22 +9,26 @@ import ServiceManagement
 @MainActor @Observable
 final class SettingsStore {
 
+    /// Хранилище, в которое пишутся настройки. По умолчанию — `.standard`;
+    /// тесты передают отдельный suite, чтобы не трогать настройки пользователя.
+    private let defaults: UserDefaults
+
     // MARK: - Properties
 
     /// Virtual key code для hotkey записи. По умолчанию 61 (Right Option).
     var hotkeyCode: Int {
-        didSet { UserDefaults.standard.set(hotkeyCode, forKey: SettingsKeys.hotkeyCode) }
+        didSet { defaults.set(hotkeyCode, forKey: SettingsKeys.hotkeyCode) }
     }
 
     /// Модификаторы хоткея — сырая маска CGEventFlags. Для хоткея-модификатора
     /// здесь маска его самого (см. Hotkey).
     var hotkeyFlags: Int {
-        didSet { UserDefaults.standard.set(hotkeyFlags, forKey: SettingsKeys.hotkeyFlags) }
+        didSet { defaults.set(hotkeyFlags, forKey: SettingsKeys.hotkeyFlags) }
     }
 
     /// Кнопка мыши, назначенная на запись; -1 — хоткей клавиатурный.
     var hotkeyMouseButton: Int {
-        didSet { UserDefaults.standard.set(hotkeyMouseButton, forKey: SettingsKeys.hotkeyMouseButton) }
+        didSet { defaults.set(hotkeyMouseButton, forKey: SettingsKeys.hotkeyMouseButton) }
     }
 
     /// Как работает хоткей: "hold" — запись идёт, пока клавиша зажата;
@@ -34,7 +38,7 @@ final class SettingsStore {
     /// не передают: утилиты вроде Logi Options+ отправляют короткий тап (замерено —
     /// 12 мс) независимо от того, сколько кнопку держат.
     var hotkeyMode: String {
-        didSet { UserDefaults.standard.set(hotkeyMode, forKey: SettingsKeys.hotkeyMode) }
+        didSet { defaults.set(hotkeyMode, forKey: SettingsKeys.hotkeyMode) }
     }
 
     var hotkeyIsToggle: Bool { hotkeyMode == "toggle" }
@@ -58,53 +62,53 @@ final class SettingsStore {
 
     /// Размер модели Whisper: "tiny", "base", "small".
     var modelSize: String {
-        didSet { UserDefaults.standard.set(modelSize, forKey: SettingsKeys.modelSize) }
+        didSet { defaults.set(modelSize, forKey: SettingsKeys.modelSize) }
     }
 
     /// Язык распознавания: "auto" или код языка whisper ("ru", "en", "de", …).
     var language: String {
-        didSet { UserDefaults.standard.set(language, forKey: SettingsKeys.language) }
+        didSet { defaults.set(language, forKey: SettingsKeys.language) }
     }
 
     /// Показывать overlay при записи и транскрипции.
     var overlayEnabled: Bool {
-        didSet { UserDefaults.standard.set(overlayEnabled, forKey: SettingsKeys.overlayEnabled) }
+        didSet { defaults.set(overlayEnabled, forKey: SettingsKeys.overlayEnabled) }
     }
 
     /// Возвращать прежнее содержимое буфера обмена после вставки диктовки.
     /// true — буфер не страдает, но Cmd+V вставит то, что было скопировано раньше.
     /// false — в буфере остаётся продиктованный текст, прежнее содержимое теряется.
     var restorePasteboard: Bool {
-        didSet { UserDefaults.standard.set(restorePasteboard, forKey: SettingsKeys.restorePasteboard) }
+        didSet { defaults.set(restorePasteboard, forKey: SettingsKeys.restorePasteboard) }
     }
 
     /// Воспроизводить звуки при начале/конце записи.
     var soundFeedback: Bool {
-        didSet { UserDefaults.standard.set(soundFeedback, forKey: SettingsKeys.soundFeedback) }
+        didSet { defaults.set(soundFeedback, forKey: SettingsKeys.soundFeedback) }
     }
 
     /// Метод вставки текста: "pasteboard" (Cmd+V) или "ax" (Accessibility API).
     var pasteMethod: String {
-        didSet { UserDefaults.standard.set(pasteMethod, forKey: SettingsKeys.pasteMethod) }
+        didSet { defaults.set(pasteMethod, forKey: SettingsKeys.pasteMethod) }
     }
 
     /// Запускать приложение при входе в систему.
     var launchAtLogin: Bool {
         didSet {
-            UserDefaults.standard.set(launchAtLogin, forKey: SettingsKeys.launchAtLogin)
+            defaults.set(launchAtLogin, forKey: SettingsKeys.launchAtLogin)
             updateLaunchAtLogin(enabled: launchAtLogin)
         }
     }
 
     /// Прошёл ли пользователь onboarding.
     var hasCompletedOnboarding: Bool {
-        didSet { UserDefaults.standard.set(hasCompletedOnboarding, forKey: SettingsKeys.hasCompletedOnboarding) }
+        didSet { defaults.set(hasCompletedOnboarding, forKey: SettingsKeys.hasCompletedOnboarding) }
     }
 
     /// Словарь/контекст для Whisper (initial_prompt): помогает точнее распознавать
     /// смешанную RU/EN речь и специфичные термины. Пустая строка = без промпта.
     var vocabularyPrompt: String {
-        didSet { UserDefaults.standard.set(vocabularyPrompt, forKey: SettingsKeys.vocabularyPrompt) }
+        didSet { defaults.set(vocabularyPrompt, forKey: SettingsKeys.vocabularyPrompt) }
     }
 
     /// Дефолтный промпт: голый список IT-терминов латиницей. `initial_prompt` в whisper —
@@ -125,8 +129,9 @@ final class SettingsStore {
 
     // MARK: - Init
 
-    init() {
-        let d = UserDefaults.standard
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        let d = defaults
 
         // Int: object(forKey:) as? Int ?? default — иначе integer(forKey:) вернёт 0 при отсутствии ключа
         self.hotkeyCode  = d.object(forKey: SettingsKeys.hotkeyCode) as? Int ?? Int(Hotkey.default.keyCode)

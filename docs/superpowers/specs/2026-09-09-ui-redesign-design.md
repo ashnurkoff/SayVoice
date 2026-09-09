@@ -218,7 +218,6 @@ All files created or rewritten by this work are in English: UI strings, comments
 
 - **`SayVoiceTests`** (new target, XCTest): pure-logic tests migrated from yesterday's scratch scripts — `HotkeyEventDecision`, `SilenceTrimmer` (real-speech guard, click rejection, short-phrase survival), `TagField.tokens/string` round-trip, `TranscriptionEngine.initialPrompt`. No UI, no audio device, runs in seconds.
 - **Screenshots**: a test-target harness (`SurfaceScreenshotTests`) driven by `Scripts/render-surfaces` renders every surface in both themes to `docs/screenshots/<surface>-<theme>.png` using the offline `NSHostingView` renderer developed during the audit. Used to check layout after changes and to keep README screenshots generated from code. Known limits are documented in the harness header: glass is rendered as the flat `glassFill` fallback; prominent buttons render inactive.
-- Manual acceptance per stage: build, install to `/Applications`, exercise the surface live, then regenerate screenshots.
 
 ## 10. Implementation order
 

@@ -26,36 +26,70 @@ final class SurfaceScreenshotTests: XCTestCase {
 
     func testRendersOverlayStates() throws {
         let directory = try outputDirectory()
+        var failures: [String] = []
 
-        try render(overlayScene(.recording), size: OverlayWindowController.panelSize, name: "overlay-recording", into: directory)
-        try render(overlayScene(.transcribing), size: OverlayWindowController.panelSize, name: "overlay-transcribing", into: directory)
-        try render(overlayScene(.result), size: OverlayWindowController.panelSize, name: "overlay-result", into: directory)
-        try render(overlayScene(.error), size: OverlayWindowController.panelSize, name: "overlay-error", into: directory)
+        for state in [OverlayModel.DisplayState.recording, .transcribing, .result, .error] {
+            failures += renderSurface(overlayScene(state), size: OverlayWindowController.panelSize,
+                                      name: "overlay-\(state)", into: directory)
+        }
+        report(failures)
     }
 
     func testRendersSettingsSections() throws {
         let directory = try outputDirectory()
+        var failures: [String] = []
 
         for section in SettingsSection.allCases {
-            try render(settings(section: section), size: SettingsView.windowSize,
-                       name: "settings-\(section.rawValue)", into: directory)
+            failures += renderSurface(settings(section: section), size: SettingsView.windowSize,
+                                      name: "settings-\(section.rawValue)", into: directory)
         }
+        report(failures)
     }
 
     func testRendersOnboardingSteps() throws {
         let directory = try outputDirectory()
+        var failures: [String] = []
 
         for step in OnboardingStep.allCases {
-            try render(onboarding(step: step), size: OnboardingView.windowSize,
-                       name: "onboarding-\(step)", into: directory)
+            failures += renderSurface(onboarding(step: step), size: OnboardingView.windowSize,
+                                      name: "onboarding-\(step)", into: directory)
         }
+        report(failures)
     }
 
     func testRendersHistoryPopover() throws {
         let directory = try outputDirectory()
+        var failures: [String] = []
 
-        try render(popover(entries: []), size: nil, name: "history-empty", into: directory)
-        try render(popover(entries: Self.sampleEntries()), size: nil, name: "history-filled", into: directory)
+        failures += renderSurface(popover(entries: []), size: nil, name: "history-empty", into: directory)
+        failures += renderSurface(popover(entries: Self.sampleEntries()), size: nil,
+                                  name: "history-filled", into: directory)
+        report(failures)
+    }
+
+    // MARK: - Per-surface reporting
+
+    /// Renders one surface inside an activity of its own, so the report names
+    /// the surface that broke, and returns the failure instead of throwing, so
+    /// the run goes on to the next surface: one bad layout must not hide the
+    /// state of every surface after it.
+    private func renderSurface<V: View>(_ view: @autoclosure () -> V, size: CGSize?,
+                                        name: String, into directory: URL) -> [String] {
+        XCTContext.runActivity(named: name) { _ in
+            do {
+                try render(view(), size: size, name: name, into: directory)
+                return []
+            } catch {
+                return ["\(name): \(error)"]
+            }
+        }
+    }
+
+    /// One failure for the whole set, listing every surface that did not render.
+    private func report(_ failures: [String], file: StaticString = #filePath, line: UInt = #line) {
+        guard !failures.isEmpty else { return }
+        XCTFail("\(failures.count) surface(s) failed to render:\n" + failures.joined(separator: "\n"),
+                file: file, line: line)
     }
 
     // MARK: - Surface builders
@@ -96,7 +130,7 @@ final class SurfaceScreenshotTests: XCTestCase {
         let router = SettingsRouter()
         router.section = section
         let manager = ModelManager(modelsDirectory: temporaryModelsDirectory())
-        return SettingsView(settings: SettingsStore(), status: status, router: router,
+        return SettingsView(settings: SettingsStore(defaults: TestDefaults.ephemeral()), status: status, router: router,
                             downloads: ModelDownloads(modelManager: manager), modelManager: manager,
                             onHotkeyChanged: nil, onHotkeyModeChanged: nil)
     }
@@ -108,7 +142,7 @@ final class SurfaceScreenshotTests: XCTestCase {
         permissions.mic = true
         permissions.ax = true
         let manager = ModelManager(modelsDirectory: temporaryModelsDirectory())
-        let model = OnboardingModel(permissions: permissions, settings: SettingsStore(),
+        let model = OnboardingModel(permissions: permissions, settings: SettingsStore(defaults: TestDefaults.ephemeral()),
                                     modelManager: manager, downloads: ModelDownloads(modelManager: manager),
                                     onFinished: {})
         model.step = step

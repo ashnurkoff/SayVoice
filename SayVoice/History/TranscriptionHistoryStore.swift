@@ -28,10 +28,6 @@ final class TranscriptionHistoryStore {
         save()
     }
 
-    func recent(_ count: Int = 10) -> [TranscriptionEntry] {
-        Array(entries.prefix(count))
-    }
-
     // MARK: - Persistence
 
     private func save() {
