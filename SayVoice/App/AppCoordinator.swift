@@ -31,9 +31,11 @@ final class AppCoordinator {
     private var onboardingWindow: NSWindow?
 
     func start() {
-        menuBarController = MenuBarController()
+        menuBarController = MenuBarController(status: status)
+        menuBarController?.hotkeyName = settingsStore.hotkey.displayName
         menuBarController?.onQuit = { NSApp.terminate(nil) }
         menuBarController?.onShowSettings = { [weak self] in self?.showSettings() }
+        menuBarController?.onShowAbout = { [weak self] in self?.showSettings(section: .system) }
         menuBarController?.onClearHistory = { [weak self] in
             self?.historyStore.clear()
             self?.menuBarController?.historyEntries = []
@@ -298,7 +300,10 @@ final class AppCoordinator {
         let view = SettingsView(
             settings: settingsStore, status: status, router: settingsRouter,
             downloads: modelDownloads, modelManager: modelManager,
-            onHotkeyChanged: { [weak self] hotkey in self?.hotkeyListener?.apply(hotkey) },
+            onHotkeyChanged: { [weak self] hotkey in
+                self?.hotkeyListener?.apply(hotkey)
+                self?.menuBarController?.hotkeyName = hotkey.displayName
+            },
             onHotkeyModeChanged: { [weak self] isToggle in self?.hotkeyListener?.apply(isToggle: isToggle) }
         )
         let window = AppWindow.make(title: "SayVoice Settings", size: SettingsView.windowSize, content: view)
@@ -330,7 +335,10 @@ final class AppCoordinator {
         )
         let view = OnboardingView(
             model: model,
-            onHotkeyChanged: { [weak self] hotkey in self?.hotkeyListener?.apply(hotkey) },
+            onHotkeyChanged: { [weak self] hotkey in
+                self?.hotkeyListener?.apply(hotkey)
+                self?.menuBarController?.hotkeyName = hotkey.displayName
+            },
             onHotkeyModeChanged: { [weak self] isToggle in self?.hotkeyListener?.apply(isToggle: isToggle) }
         )
         let window = AppWindow.make(title: "Welcome to SayVoice", size: OnboardingView.windowSize, content: view)
