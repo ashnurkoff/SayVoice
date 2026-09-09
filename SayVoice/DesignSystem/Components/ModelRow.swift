@@ -15,7 +15,7 @@ struct ModelRow: View {
     let isSelected: Bool
     let isDownloaded: Bool
     let isHighlighted: Bool
-    /// Off where the row has no width to spare — the 400 pt onboarding window.
+    /// Off where the row has no width to spare — the onboarding pane.
     let showsQualityBar: Bool
     let download: DownloadState?
     /// Passed to `DownloadProgress`: only one row on a screen may be primary.

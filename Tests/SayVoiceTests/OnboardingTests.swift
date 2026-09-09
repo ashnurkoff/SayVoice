@@ -25,8 +25,8 @@ final class OnboardingTests: XCTestCase {
         return (m, p)
     }
 
-    func testStepsRunWelcomePermissionsModelHotkey() {
-        XCTAssertEqual(OnboardingStep.allCases, [.welcome, .permissions, .model, .hotkey])
+    func testStepsRunWelcomePermissionsModelHotkeyDone() {
+        XCTAssertEqual(OnboardingStep.allCases, [.welcome, .permissions, .model, .hotkey, .done])
     }
 
     func testPermissionsStepCannotBeSkippedAndBlocksUntilBothGranted() {
@@ -41,7 +41,7 @@ final class OnboardingTests: XCTestCase {
         m.next(); XCTAssertEqual(m.step, .model)
     }
 
-    func testModelAndHotkeyStepsCanBeSkippedAndFinishCallsBack() {
+    func testModelAndHotkeyStepsCanBeSkippedAndTheDoneStepFinishes() {
         var finished = false
         let (m, _) = makeModel(mic: true, ax: true) { finished = true }
         m.next(); m.refreshPermissions(); m.next()   // → model
@@ -49,8 +49,44 @@ final class OnboardingTests: XCTestCase {
         m.skip()                                      // → hotkey
         XCTAssertEqual(m.step, .hotkey)
         XCTAssertTrue(m.canSkip)
+        m.next()                                      // → done
+        XCTAssertEqual(m.step, .done)
+        XCTAssertFalse(finished, "the hotkey step no longer ends onboarding")
+        // The last step is a confirmation, not a decision: there is nothing to skip.
+        XCTAssertFalse(m.canSkip)
+        m.skip(); XCTAssertEqual(m.step, .done, "skip is a no-op on the last step")
         m.next()                                      // finish
         XCTAssertTrue(finished)
+    }
+
+    /// Item 2 of the owner's first round: a running transfer pins the step.
+    /// Cancel is the way out; Continue is disabled and "Download later" is gone,
+    /// both of which the view reads off these two properties.
+    func testTheModelStepIsPinnedWhileTheTargetIsDownloading() async {
+        let box = StreamBox()
+        let model = makeFirstRunModel(granted: true, downloads: { manager in
+            ModelDownloads(modelManager: manager,
+                           progressSource: { _ in AsyncThrowingStream { box.continuation = $0 } },
+                           isAvailable: { _ in false })
+        })
+        model.step = .model
+        XCTAssertFalse(model.isDownloadingTarget)
+        XCTAssertTrue(model.canSkip)
+        XCTAssertTrue(model.canContinue)
+
+        model.downloads.start(model.downloadTarget)
+        await settle(until: { box.continuation != nil })
+
+        XCTAssertTrue(model.isDownloadingTarget)
+        XCTAssertFalse(model.canContinue, "Continue is disabled during a transfer")
+        XCTAssertFalse(model.canSkip, "\"Download later\" is gone during a transfer")
+        model.next(); model.skip()
+        XCTAssertEqual(model.step, .model, "neither button may leave the step mid-download")
+
+        model.downloads.cancel(model.downloadTarget)
+        XCTAssertFalse(model.isDownloadingTarget, "cancelling releases the step")
+        XCTAssertTrue(model.canSkip)
+        box.continuation?.finish()
     }
 
     func testOnboardingRendersEveryStepInBothThemesAtWindowSize() {
@@ -63,8 +99,8 @@ final class OnboardingTests: XCTestCase {
                 host.frame = CGRect(origin: .zero, size: OnboardingView.windowSize)
                 host.layoutSubtreeIfNeeded()
                 let fit = host.fittingSize
-                XCTAssertLessThanOrEqual(fit.height, OnboardingView.windowSize.height + 0.5, "\(step) overflows 360 pt (\(fit.height))")
-                XCTAssertLessThanOrEqual(fit.width, OnboardingView.windowSize.width + 0.5, "\(step) overflows 640 pt (\(fit.width))")
+                XCTAssertLessThanOrEqual(fit.height, OnboardingView.windowSize.height + 0.5, "\(step) overflows \(OnboardingView.windowSize.height) pt (\(fit.height))")
+                XCTAssertLessThanOrEqual(fit.width, OnboardingView.windowSize.width + 0.5, "\(step) overflows \(OnboardingView.windowSize.width) pt (\(fit.width))")
             }
         }
     }
@@ -150,14 +186,15 @@ final class OnboardingTests: XCTestCase {
         }
     }
 
-    func testModelStepOffersTheThreeFirstRunModelsWithTurboQ5Recommended() {
-        XCTAssertEqual(OnboardingModel.offeredModels, [.turboQ5, .small, .turboQ8])
+    func testModelStepOffersAllFiveModelsWithTurboQ5RecommendedFirst() {
+        // Item 1 of the owner's first round: the subset is gone — first run
+        // shows the same catalogue Settings does, in the same order.
+        XCTAssertEqual(OnboardingModel.offeredModels, ModelManager.ModelSize.allCases)
         // Preselected on a fresh install: `SettingsStore` falls back to the
         // recommended model, and the row badged "recommended" is the same one.
         XCTAssertEqual(ModelManager.ModelSize.recommended, .turboQ5)
-        XCTAssertEqual(OnboardingModel.offeredModels.first, .recommended)
-        // Whatever is stored — including one of the two models the step does not
-        // list — the footer always offers a download the step can show.
+        XCTAssertTrue(OnboardingModel.offeredModels.contains(.recommended))
+        // Whatever is stored, the footer always offers a download the step lists.
         XCTAssertTrue(OnboardingModel.offeredModels.contains(makeFirstRunModel(granted: true).downloadTarget))
     }
 
@@ -182,8 +219,8 @@ final class OnboardingTests: XCTestCase {
         model.stopPolling()
     }
 
-    /// The squeeze the 400 pt window produced before the quality bar came off
-    /// the onboarding rows: the name truncated and the chips wrapped. Measured
+    /// The squeeze the narrow window produces without the quality bar off the
+    /// onboarding rows: the name truncated and the chips wrapped. Measured
     /// at the row's *ideal* width — `lineLimit(1)` lets `fittingSize` report a
     /// truncated row as fitting, so only `fixedSize` exposes the overflow.
     func testModelStepRowsFitWithoutTruncatingTheName() {
@@ -221,6 +258,21 @@ final class OnboardingTests: XCTestCase {
         }
     }
 
+    /// The last step names the hotkey the user actually has, not the default
+    /// the copy was written against.
+    func testDoneStepNamesTheCurrentHotkey() {
+        let model = makeFirstRunModel(granted: true)
+        model.step = .done
+        let standard = DoneStep(model: model).message
+        XCTAssertTrue(standard.contains(model.settings.hotkey.displayName), standard)
+
+        // F13 — nothing like the Right ⌥ default.
+        model.settings.hotkey = Hotkey(keyCode: 105, flags: 0, mouseButton: nil)
+        let changed = DoneStep(model: model).message
+        XCTAssertTrue(changed.contains(model.settings.hotkey.displayName), changed)
+        XCTAssertNotEqual(changed, standard, "the sentence must follow the setting")
+    }
+
     private func assertFits(_ step: OnboardingStep, of model: OnboardingModel, dark: Bool, note: String,
                             file: StaticString = #filePath, line: UInt = #line) {
         let view = OnboardingView(model: model, onHotkeyChanged: nil, onHotkeyModeChanged: nil)
@@ -229,7 +281,7 @@ final class OnboardingTests: XCTestCase {
         )
         let theme = dark ? "dark" : "light"
         XCTAssertLessThanOrEqual(size.height, OnboardingView.windowSize.height,
-                                 "\(step) [\(note), \(theme)] overflows 360 pt (\(size.height))", file: file, line: line)
+                                 "\(step) [\(note), \(theme)] overflows \(OnboardingView.windowSize.height) pt (\(size.height))", file: file, line: line)
         XCTAssertLessThanOrEqual(size.width, OnboardingView.stepWidth + 0.5,
                                  "\(step) [\(note), \(theme)] overflows \(OnboardingView.stepWidth) pt (\(size.width))", file: file, line: line)
     }

@@ -4,7 +4,11 @@ import SwiftUI
 
 /// First-run window: art panel on the left, one step at a time on the right.
 struct OnboardingView: View {
-    static let windowSize = NSSize(width: 640, height: 360)
+    /// 640 × 540. The model step lists all five models with a purpose note
+    /// under each name and keeps the download control below the list; measured
+    /// at its tallest — a running transfer with speed and time left — that step
+    /// wants 526 pt, so 360 (and the 420 first proposed) could not hold it.
+    static let windowSize = NSSize(width: 640, height: 540)
     /// Width the art panel leaves to a step.
     static var stepWidth: CGFloat { windowSize.width - ArtPanel.width }
 
@@ -34,6 +38,7 @@ struct OnboardingView: View {
         case .permissions: PermissionsStep(model: model)
         case .model:       ModelStep(model: model)
         case .hotkey:      HotkeyStep(model: model, onHotkeyChanged: onHotkeyChanged, onHotkeyModeChanged: onHotkeyModeChanged)
+        case .done:        DoneStep(model: model)
         }
     }
 

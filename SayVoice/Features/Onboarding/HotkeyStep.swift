@@ -26,7 +26,7 @@ struct HotkeyStep: View {
             }
         } footer: {
             Button("Skip") { model.skip() }.buttonStyle(.dsLink)
-            Button("Finish") { model.next() }.buttonStyle(.dsPrimary)
+            Button("Continue") { model.next() }.buttonStyle(.dsPrimary)
         }
     }
 }

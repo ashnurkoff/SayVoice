@@ -7,7 +7,7 @@ struct ModelStep: View {
         let target = model.downloadTarget
         let download = model.downloads.state(for: target)
         StepLayout(title: "Pick a model",
-                   subtitle: "Large Turbo Q5 is the sweet spot. All five are in Settings.") {
+                   subtitle: "Large Turbo Q5 is the sweet spot. You can change this later in Settings.") {
             VStack(spacing: DS.Space.s4) {
                 ForEach(OnboardingModel.offeredModels, id: \.self) { size in
                     let isSelected = model.settings.modelSize == size.settingsString
@@ -24,12 +24,12 @@ struct ModelStep: View {
                         // it is not on disk yet" — the same signal Settings
                         // shows when transcription finds the model missing.
                         isHighlighted: isSelected && !isDownloaded,
-                        // 400 pt leaves no room for the bar next to the name
-                        // and the chips; Settings keeps it.
+                        // The onboarding pane leaves no room for the bar next to
+                        // the name and the chips; Settings keeps it.
                         showsQualityBar: false,
                         // The download control is a line of its own below the
-                        // list, not one per row: three of them do not fit a
-                        // 360 pt window, and its status line needs the width.
+                        // list, not one per row: five of them would not fit the
+                        // window, and its status line needs the width.
                         download: nil,
                         onSelect: { model.settings.modelSize = size.settingsString },
                         onDownload: {},
@@ -46,10 +46,11 @@ struct ModelStep: View {
                 }
             }
         } footer: {
-            if case .running = download {
-                // Leaving does not stop the transfer: the downloads coordinator
-                // belongs to the app, not to this window.
-                Button("Continue") { model.next() }.buttonStyle(.dsPrimary)
+            if model.isDownloadingTarget {
+                // A transfer under way pins the step: Cancel, on the line above,
+                // is the way out. Leaving would start the app without the model
+                // it is fetching, and "Download later" would be a lie.
+                Button("Continue") { model.next() }.buttonStyle(.dsPrimary).disabled(true)
             } else if download != nil {
                 Button("Download later") { model.skip() }.buttonStyle(.dsLink)
             } else {

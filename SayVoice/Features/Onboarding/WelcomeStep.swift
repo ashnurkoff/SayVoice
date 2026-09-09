@@ -31,9 +31,9 @@ struct StepLayout<Content: View, Footer: View>: View {
             Spacer(minLength: 0)
             HStack(spacing: DS.Space.s12) { Spacer(minLength: 0); footer() }
         }
-        // 20/8 rather than the settings window's 28/16: this window is 360 pt
-        // tall, and the model step — three rows, a download line and a footer —
-        // leaves no room for wider margins.
+        // 20/8 rather than the settings window's 28/16: the model step — five
+        // rows with notes, a download line and a footer — already sets the
+        // window's height, and wider margins would only add to it.
         .padding(DS.Space.s20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }

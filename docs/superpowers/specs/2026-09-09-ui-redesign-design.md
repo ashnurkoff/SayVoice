@@ -139,12 +139,13 @@ Rule of boundaries: a component knows nothing about `SettingsStore`, `ModelManag
 
 ### 5.3 First run (onboarding)
 
-- **Size** 640 × 360. Left: art panel 240 wide — `accent → accent2` gradient, large white waveform, progress dots at the bottom. Right: one step at a time.
-- **Steps:** Welcome → Permissions → Model → Hotkey.
+- **Size** 640 × 540 (amended 2026-09-09 after the owner's first live test: the model step lists all five models with a purpose note under each name, and at its tallest — a running download with speed and time left — it measures 526 pt). Left: art panel 240 wide — `accent → accent2` gradient, large white waveform, progress dots at the bottom. Right: one step at a time.
+- **Steps:** Welcome → Permissions → Model → Hotkey → Done.
   - **Welcome:** name, one sentence on what it does, one sentence that everything runs locally. "Get started".
   - **Permissions:** two rows — Microphone, Accessibility — each with status (granted / not yet), and a button ("Allow" / "Open System Settings"). Accessibility is polled every second while the step is visible. **No skip:** the app cannot work without them, and pretending otherwise is dishonest.
-  - **Model:** `ModelRow` list with Large Turbo Q5 preselected and marked recommended, plus Small and Large Turbo Q8 — a deliberate subset of three; the full list of five lives in Settings → Recognition. `DownloadProgress` inline. Skip allowed ("Download later" — the settings window will offer it).
+  - **Model:** `ModelRow` list of all five models in catalogue order, each with its one-line `purpose` note, Large Turbo Q5 preselected and marked recommended (amended: the subset of three hid the two models worth comparing). `DownloadProgress` on a line of its own below the list. Skip allowed ("Download later" — the settings window will offer it), **except while a transfer is running**: Continue is then disabled and "Download later" is hidden, so Cancel is the only way out.
   - **Hotkey:** `HotkeyRecorder` with the current default (Right ⌥) and the Hold/Toggle picker. Skip allowed.
+  - **Done:** `Orb(.done)` at 56 pt, title "You're all set", one sentence naming the hotkey read from settings, and a single primary "Start" that finishes onboarding. No skip.
 - Finish: closes the window, starts the normal flow. The stale "Whisper Small · 465 MB" and "hold Right Option" copy is gone; everything reads from settings.
 
 ### 5.4 History popover

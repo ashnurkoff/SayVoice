@@ -21,7 +21,7 @@ protocol PermissionSource: AnyObject {
 extension PermissionManager: PermissionSource {}
 
 enum OnboardingStep: Int, CaseIterable {
-    case welcome, permissions, model, hotkey
+    case welcome, permissions, model, hotkey, done
 }
 
 /// Step state machine for first run. Permissions cannot be skipped — the app
@@ -49,23 +49,46 @@ final class OnboardingModel {
         refreshPermissions()
     }
 
-    var canSkip: Bool { step == .model || step == .hotkey }
-
-    var canContinue: Bool {
-        step != .permissions || (microphoneGranted && accessibilityGranted)
+    /// Permissions cannot be skipped, and neither can the closing step — there
+    /// is nothing on it to decide. The model step also locks while its download
+    /// runs, so "Download later" cannot abandon a transfer that is under way.
+    var canSkip: Bool {
+        switch step {
+        case .model:  return !isDownloadingTarget
+        case .hotkey: return true
+        default:      return false
+        }
     }
 
-    /// The three models offered on first run (spec §5.3); the full list lives in Settings.
-    static let offeredModels: [ModelManager.ModelSize] = [.turboQ5, .small, .turboQ8]
+    var canContinue: Bool {
+        switch step {
+        case .permissions: return microphoneGranted && accessibilityGranted
+        case .model:       return !isDownloadingTarget
+        default:           return true
+        }
+    }
 
-    /// The model whose download the step offers: the selected one when it is one
-    /// of the three, the recommended one otherwise. Onboarding downloads a single
-    /// model, so the control lives in the footer rather than in every row — three
-    /// download buttons would neither fit the window nor obey the one-primary rule.
+    /// The models offered on first run (spec §5.3): the whole catalogue, in the
+    /// same order as Settings → Recognition. The subset of three the step used
+    /// to show hid the two the owner most wanted to compare.
+    static let offeredModels: [ModelManager.ModelSize] = ModelManager.ModelSize.allCases
+
+    /// The model whose download the step offers: the selected one, or the
+    /// recommended one when the stored string names nothing. Onboarding
+    /// downloads a single model, so the control lives in the footer rather than
+    /// in every row — five download buttons would neither fit the window nor
+    /// obey the one-primary rule.
     var downloadTarget: ModelManager.ModelSize {
-        guard let selected = ModelManager.ModelSize(settingsString: settings.modelSize),
-              Self.offeredModels.contains(selected) else { return .recommended }
-        return selected
+        ModelManager.ModelSize(settingsString: settings.modelSize) ?? .recommended
+    }
+
+    /// Whether the model the step offers is being fetched right now. The footer
+    /// reads it to disable Continue and to hide "Download later": leaving
+    /// mid-transfer would start the app without the model it is fetching, and
+    /// Cancel is the honest way out.
+    var isDownloadingTarget: Bool {
+        if case .running = downloads.state(for: downloadTarget) { return true }
+        return false
     }
 
     func next() {
