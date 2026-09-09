@@ -47,13 +47,18 @@ final class ModelManager {
         /// One line under the name in the model list, in both Settings and
         /// onboarding: what this model is actually for. The catalogue is the
         /// only place that knows; `ModelRow` renders whatever it is handed.
+        ///
+        /// Language-neutral by decision (owner, second live test): the app
+        /// dictates in a dozen languages, and a note that ranks two of them
+        /// tells a speaker of the other ten nothing. Accuracy and speed are
+        /// what the notes compare.
         var purpose: String {
             switch self {
-            case .base:    return "Fastest and roughest; short English commands only."
-            case .small:   return "Light and quick; fine for English, weak on Russian."
-            case .turboQ5: return "Best balance: accurate in Russian and English, faster than real time."
+            case .base:    return "Fastest and roughest; short commands and single words."
+            case .small:   return "Light and quick; good for clear speech."
+            case .turboQ5: return "Best balance of accuracy and speed; faster than real time."
             case .turboQ8: return "Same model, less compression; marginally more accurate for 300 MB more."
-            case .turbo:   return "Full precision; no audible gain over Q8 on Apple Silicon, 1.6 GB."
+            case .turbo:   return "Full precision; no audible gain over Q8 on Apple Silicon."
             }
         }
 
@@ -75,7 +80,7 @@ final class ModelManager {
         }
 
         /// Converts the settings string into the enum.
-        /// Tiny is gone from the list: it turns Russian speech into mush, and
+        /// Tiny is gone from the list: it turns connected speech into mush, and
         /// its speed is not needed on Apple Silicon — Turbo Q5 transcribes
         /// faster than real time. A stored choice of "tiny" is moved to the
         /// nearest one left, Base.

@@ -15,20 +15,28 @@ final class ModelCatalogTests: XCTestCase {
     }
 
     /// Item 7 of the owner's first round: every row explains what its model is
-    /// for, in one line, in English.
-    func testEveryModelCarriesAOneLinePurposeNote() {
+    /// for, in one line, in English. Item 10 of the second: the line names no
+    /// language — the app dictates in a dozen of them.
+    func testEveryModelCarriesAOneLineLanguageNeutralPurposeNote() {
         let expected: [ModelManager.ModelSize: String] = [
-            .base:    "Fastest and roughest; short English commands only.",
-            .small:   "Light and quick; fine for English, weak on Russian.",
-            .turboQ5: "Best balance: accurate in Russian and English, faster than real time.",
+            .base:    "Fastest and roughest; short commands and single words.",
+            .small:   "Light and quick; good for clear speech.",
+            .turboQ5: "Best balance of accuracy and speed; faster than real time.",
             .turboQ8: "Same model, less compression; marginally more accurate for 300 MB more.",
-            .turbo:   "Full precision; no audible gain over Q8 on Apple Silicon, 1.6 GB.",
+            .turbo:   "Full precision; no audible gain over Q8 on Apple Silicon.",
         ]
+        // Every language the recognition picker offers, by its English name:
+        // no note may single one out.
+        let languages = ["English", "Russian", "German", "Spanish", "French", "Italian",
+                         "Dutch", "Polish", "Portuguese", "Turkish", "Ukrainian"]
         for m in ModelManager.ModelSize.allCases {
             XCTAssertEqual(m.purpose, expected[m], "\(m)")
             XCTAssertFalse(m.purpose.contains("\n"), "\(m): the note is one line")
             XCTAssertNil(m.purpose.rangeOfCharacter(from: CharacterSet(charactersIn: Unicode.Scalar(0x0400)!...Unicode.Scalar(0x04FF)!)),
                          "\(m): notes are English")
+            for language in languages {
+                XCTAssertFalse(m.purpose.contains(language), "\(m): the note names \(language)")
+            }
         }
     }
 
