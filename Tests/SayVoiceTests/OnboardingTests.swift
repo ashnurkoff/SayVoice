@@ -69,7 +69,7 @@ final class OnboardingTests: XCTestCase {
         }
     }
 
-    func testFractionWrapperAndRussianCatalogueStringsAreGone() {
+    func testSizeTextUsesEnglishUnits() {
         // Compile-time guard: these members no longer exist.
         // (If this file compiles, the members are gone — the assertions below only keep the test non-empty.)
         XCTAssertEqual(ModelManager.ModelSize.turboQ5.sizeText, "574 MB")
@@ -95,22 +95,59 @@ final class OnboardingTests: XCTestCase {
         }
     }
 
-    /// The running download is the tallest the model step ever gets: the footer
-    /// grows a progress bar and a status line where the button was.
-    func testModelStepFitsWhileADownloadIsRunning() {
+    /// Holds the injected stream's continuation so the test can drive it.
+    final class StreamBox {
+        var continuation: AsyncThrowingStream<ModelDownloadProgress, Error>.Continuation?
+    }
+
+    /// The running download is the tallest the model step ever gets, and its
+    /// status line is the longest string the screen ever shows. Two samples
+    /// 0.7 s apart make `ModelDownloads` compute a speed and a time left, so the
+    /// measured state renders the full "47% · 0.1 MB/s · 1 h 1 min left" form
+    /// rather than the bare percentage a single sample would produce.
+    func testModelStepFitsWhileADownloadIsRunning() async {
+        let box = StreamBox()
         let model = makeFirstRunModel(granted: true, downloads: { manager in
             ModelDownloads(modelManager: manager,
-                           // A stream that never yields and never finishes: the
-                           // state stays `.running` for as long as the test needs.
-                           progressSource: { _ in AsyncThrowingStream { _ in } },
+                           progressSource: { _ in AsyncThrowingStream { box.continuation = $0 } },
                            isAvailable: { _ in false })
         })
         model.step = .model
-        model.downloads.start(model.downloadTarget)
-        for dark in [true, false] {
-            assertFits(.model, of: model, dark: dark, note: "downloading")
+        let target = model.downloadTarget
+        model.downloads.start(target)
+        await settle(until: { box.continuation != nil })
+
+        let total: Int64 = 574_000_000
+        box.continuation?.yield(ModelDownloadProgress(bytesReceived: 269_722_000, totalBytes: total))
+        try? await Task.sleep(for: .milliseconds(700))
+        box.continuation?.yield(ModelDownloadProgress(bytesReceived: 269_780_000, totalBytes: total))
+        await settle(until: {
+            if case .running(_, let speed, let left)? = model.downloads.state(for: target) {
+                return speed != nil && left != nil
+            }
+            return false
+        })
+
+        guard case .running(let fraction, let speed, let left)? = model.downloads.state(for: target) else {
+            return XCTFail("the download should be running with a speed and a time left")
         }
-        model.downloads.cancel(model.downloadTarget)
+        let status = DownloadProgress.statusText(fraction: fraction, bytesPerSecond: speed, secondsLeft: left)
+        XCTAssertTrue(status.contains("MB/s") && status.contains("left"), "expected the long status form, got \(status)")
+
+        for dark in [true, false] {
+            assertFits(.model, of: model, dark: dark, note: "downloading, \(status)")
+        }
+
+        model.downloads.cancel(target)
+        box.continuation?.finish()
+    }
+
+    /// Runs the main-actor loop until `condition` holds or the budget runs out.
+    private func settle(until condition: () -> Bool) async {
+        for _ in 0..<200 {
+            if condition() { return }
+            try? await Task.sleep(for: .milliseconds(5))
+        }
     }
 
     func testModelStepOffersTheThreeFirstRunModelsWithTurboQ5Recommended() {

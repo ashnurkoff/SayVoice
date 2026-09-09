@@ -21,7 +21,7 @@ struct StepLayout<Content: View, Footer: View>: View {
     @ViewBuilder let footer: () -> Footer
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Space.s12) {
+        VStack(alignment: .leading, spacing: DS.Space.s8) {
             VStack(alignment: .leading, spacing: DS.Space.s4) {
                 Text(title).font(DS.font(.display)).foregroundStyle(DS.Colors.text.color)
                 Text(subtitle).font(DS.font(.body)).foregroundStyle(DS.Colors.muted.color)
@@ -31,8 +31,9 @@ struct StepLayout<Content: View, Footer: View>: View {
             Spacer(minLength: 0)
             HStack(spacing: DS.Space.s12) { Spacer(minLength: 0); footer() }
         }
-        // 20/12 rather than the settings window's 28/16: this window is 360 pt
-        // tall, and the model step's three rows leave no room for wider margins.
+        // 20/8 rather than the settings window's 28/16: this window is 360 pt
+        // tall, and the model step — three rows, a download line and a footer —
+        // leaves no room for wider margins.
         .padding(DS.Space.s20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }

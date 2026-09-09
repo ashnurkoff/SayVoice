@@ -4,20 +4,29 @@ struct ModelStep: View {
     @Bindable var model: OnboardingModel
 
     var body: some View {
+        let target = model.downloadTarget
+        let download = model.downloads.state(for: target)
         StepLayout(title: "Pick a model",
-                   subtitle: "Large Turbo Q5 is the sweet spot. All five models are in Settings → Recognition.") {
-            VStack(spacing: DS.Space.s8) {
+                   subtitle: "Large Turbo Q5 is the sweet spot. All five are in Settings.") {
+            VStack(spacing: DS.Space.s4) {
                 ForEach(OnboardingModel.offeredModels, id: \.self) { size in
+                    let isSelected = model.settings.modelSize == size.settingsString
+                    let isDownloaded = model.modelManager.isModelAvailable(size)
                     ModelRow(
                         name: size.displayName,
                         badge: size == .recommended ? "recommended" : nil,
                         badgeIsAccent: size == .recommended,
                         qualitySteps: size.qualitySteps,
                         sizeText: size.sizeText,
-                        isSelected: model.settings.modelSize == size.settingsString,
-                        isDownloaded: model.modelManager.isModelAvailable(size),
-                        // The download control is in the footer, not in the row:
-                        // three of them do not fit a 360 pt window.
+                        isSelected: isSelected,
+                        isDownloaded: isDownloaded,
+                        // The warn border says "this is the one you picked and
+                        // it is not on disk yet" — the same signal Settings
+                        // shows when transcription finds the model missing.
+                        isHighlighted: isSelected && !isDownloaded,
+                        // The download control is a line of its own below the
+                        // list, not one per row: three of them do not fit a
+                        // 360 pt window, and its status line needs the width.
                         download: nil,
                         onSelect: { model.settings.modelSize = size.settingsString },
                         onDownload: {},
@@ -25,18 +34,20 @@ struct ModelStep: View {
                         onRetry: {}
                     )
                 }
+                if let download {
+                    DownloadProgress(state: download,
+                                     onStart: { model.downloads.start(target) },
+                                     onCancel: { model.downloads.cancel(target) },
+                                     onRetry: { model.downloads.start(target) })
+                }
             }
         } footer: {
-            let target = model.downloadTarget
-            if let state = model.downloads.state(for: target) {
-                // Skipping does not stop a running transfer: the downloads
-                // coordinator belongs to the app, not to this window.
+            if case .running = download {
+                // Leaving does not stop the transfer: the downloads coordinator
+                // belongs to the app, not to this window.
+                Button("Continue") { model.next() }.buttonStyle(.dsPrimary)
+            } else if download != nil {
                 Button("Download later") { model.skip() }.buttonStyle(.dsLink)
-                DownloadProgress(state: state,
-                                 onStart: { model.downloads.start(target) },
-                                 onCancel: { model.downloads.cancel(target) },
-                                 onRetry: { model.downloads.start(target) })
-                    .frame(width: 200)
             } else {
                 Button("Continue") { model.next() }.buttonStyle(.dsPrimary)
             }

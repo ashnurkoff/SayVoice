@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// First-run window: art panel on the left, one step at a time on the right.
@@ -21,6 +22,12 @@ struct OnboardingView: View {
         .frame(width: Self.windowSize.width, height: Self.windowSize.height)
         .background(DS.Colors.ground.color)
         .font(DS.font(.body))
+        // Closing the window from its own close button skips every step's
+        // onDisappear, and the permission poll must not outlive it. Onboarding
+        // is the only window open at this point, so no filtering is needed.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { _ in
+            model.stopPolling()
+        }
     }
 
     @ViewBuilder

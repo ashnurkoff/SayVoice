@@ -22,15 +22,6 @@ extension PermissionManager: PermissionSource {}
 
 enum OnboardingStep: Int, CaseIterable {
     case welcome, permissions, model, hotkey
-
-    var title: String {
-        switch self {
-        case .welcome:     return "Welcome"
-        case .permissions: return "Permissions"
-        case .model:       return "Model"
-        case .hotkey:      return "Hotkey"
-        }
-    }
 }
 
 /// Step state machine for first run. Permissions cannot be skipped — the app
