@@ -92,7 +92,17 @@ final class OverlayWindowController: NSWindowController {
         cancelDismiss()
         model.displayState = .error
         model.message = message
-        model.errorAction = action
+        // Acting on the card dismisses it: once the user has been sent to
+        // System Settings the panel has nothing left to say, and leaving it up
+        // keeps a click-swallowing shadow over the screen.
+        if let action {
+            model.errorAction = (title: action.title, handler: { [weak self] in
+                action.handler()
+                self?.dismiss()
+            })
+        } else {
+            model.errorAction = nil
+        }
         window?.ignoresMouseEvents = action == nil
         showPanel()
     }
@@ -110,7 +120,7 @@ final class OverlayWindowController: NSWindowController {
             try? await Task.sleep(for: .seconds(delay))
             // Bounded pause: a pointer left resting on the panel — or a hover
             // state that never clears — must not keep it up forever.
-            let deadline = ContinuousClock.now + .seconds(10)
+            let deadline = ContinuousClock.now + .seconds(DS.Motion.hoverPauseLimit)
             while let self, self.model.isHovered, !Task.isCancelled, ContinuousClock.now < deadline {
                 try? await Task.sleep(for: .milliseconds(250))
             }

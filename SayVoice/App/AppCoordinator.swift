@@ -195,7 +195,7 @@ final class AppCoordinator {
                 )
 
                 if settingsStore.overlayEnabled {
-                    overlayController?.dismiss(after: 2.0)
+                    overlayController?.dismiss(after: DS.Motion.resultAutoDismiss)
                 }
                 state = .idle
             } catch let err as TranscriptionError {
@@ -420,7 +420,7 @@ final class AppCoordinator {
         case .idle:
             if old == .injecting {
                 playEndSound()
-                // Overlay result display handled by dismiss(after: 2.0) in handleKeyUp
+                // Overlay result display handled by dismiss(after:) in handleKeyUp
             } else {
                 overlayController?.dismiss()
             }
@@ -460,9 +460,14 @@ final class AppCoordinator {
                     }
                     overlayController?.showError(message: msg, action: action)
                 }
-                if err != .accessibilityPermissionDenied {
-                    overlayController?.dismiss(after: 3.0)
-                }
+                // Every error card is bounded, the accessibility one included:
+                // it carries a button and needs longer, but it must not sit on
+                // screen indefinitely swallowing clicks under its shadow.
+                overlayController?.dismiss(
+                    after: err == .accessibilityPermissionDenied
+                        ? DS.Motion.errorWithActionAutoDismiss
+                        : DS.Motion.errorAutoDismiss
+                )
             }
             if err != .accessibilityPermissionDenied {
                 Task {
