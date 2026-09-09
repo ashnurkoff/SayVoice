@@ -42,11 +42,11 @@ Copy the built app into `/Applications`:
 cp -R build/Build/Products/Release/SayVoice.app /Applications/
 ```
 
-On the first launch the onboarding asks for the two permissions the app cannot work without — Microphone and Accessibility (the hotkey listener and the Accessibility insertion need it) — then offers a model to download and lets you pick the hotkey. Both permissions are granted in System Settings → Privacy & Security.
+On the first launch the onboarding asks for the two permissions the app cannot work without — Microphone and Accessibility (the hotkey listener and the Accessibility insertion need it) — then offers a model to download, lets you pick the hotkey and closes with a confirmation screen. Both permissions are granted in System Settings → Privacy & Security.
 
 ## Models
 
-Models are downloaded on demand into `~/Library/Application Support/SayVoice/Models` and are never bundled with the app. Settings → Recognition lists all five; the first-run wizard offers three of them.
+Models are downloaded on demand into `~/Library/Application Support/SayVoice/Models` and are never bundled with the app. Settings → Recognition and the first-run wizard both list all five, each with a line saying what it is for.
 
 | Model | Size |
 |---|---|
@@ -124,6 +124,8 @@ The script generates the project if it is missing and runs the `SurfaceScreensho
 |---|---|---|
 | Recording overlay | [overlay-recording-dark](docs/screenshots/overlay-recording-dark.png) | [overlay-recording-light](docs/screenshots/overlay-recording-light.png) |
 | Onboarding — welcome | [onboarding-welcome-dark](docs/screenshots/onboarding-welcome-dark.png) | [onboarding-welcome-light](docs/screenshots/onboarding-welcome-light.png) |
+| Onboarding — model | [onboarding-model-dark](docs/screenshots/onboarding-model-dark.png) | [onboarding-model-light](docs/screenshots/onboarding-model-light.png) |
+| Onboarding — done | [onboarding-done-dark](docs/screenshots/onboarding-done-dark.png) | [onboarding-done-light](docs/screenshots/onboarding-done-light.png) |
 | History popover | [history-filled-dark](docs/screenshots/history-filled-dark.png) | [history-filled-light](docs/screenshots/history-filled-light.png) |
 | Settings — recognition | [settings-recognition-dark](docs/screenshots/settings-recognition-dark.png) | [settings-recognition-light](docs/screenshots/settings-recognition-light.png) |
 

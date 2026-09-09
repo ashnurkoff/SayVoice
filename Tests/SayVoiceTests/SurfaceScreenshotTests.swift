@@ -169,13 +169,21 @@ final class SurfaceScreenshotTests: XCTestCase {
 
     // MARK: - Renderer
 
-    /// `nil` size means the view's own fitting size.
+    /// `nil` size means the view's own fitting size. The popover is the only
+    /// surface that sizes itself, and its list reports its height back through
+    /// the view state one layout pass late, so that size is read until it
+    /// settles — otherwise the capture shows the list stretched to its cap.
     private func render<V: View>(_ view: V, size: CGSize?, name: String, into directory: URL) throws {
         for dark in [true, false] {
             let host = NSHostingView(rootView: AnyView(view))
             host.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-            host.layoutSubtreeIfNeeded()
-            let bounds = CGRect(origin: .zero, size: size ?? host.fittingSize)
+            let bounds: CGRect
+            if let size {
+                host.layoutSubtreeIfNeeded()
+                bounds = CGRect(origin: .zero, size: size)
+            } else {
+                bounds = CGRect(origin: .zero, size: HistoryPopover.settledFittingSize(of: host))
+            }
             host.frame = bounds
             host.layoutSubtreeIfNeeded()
 
