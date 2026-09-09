@@ -172,7 +172,7 @@ final class AppCoordinator {
 
                 state = .injecting
                 if settingsStore.overlayEnabled {
-                    overlayController?.showResult(text: text)
+                    overlayController?.showResult(text: text, durationSeconds: durationSec, onCopy: nil, onShowAll: nil)
                 }
 
                 // Возвращаем активность приложению, где началась диктовка.
