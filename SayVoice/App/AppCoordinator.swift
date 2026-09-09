@@ -172,7 +172,18 @@ final class AppCoordinator {
 
                 state = .injecting
                 if settingsStore.overlayEnabled {
-                    overlayController?.showResult(text: text, durationSeconds: durationSec, onCopy: nil, onShowAll: nil)
+                    overlayController?.showResult(
+                        text: text,
+                        durationSeconds: durationSec,
+                        onCopy: {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(text, forType: .string)
+                        },
+                        onShowAll: { [weak self] in
+                            self?.overlayController?.dismiss()
+                            self?.menuBarController?.showHistory()
+                        }
+                    )
                 }
 
                 // Возвращаем активность приложению, где началась диктовка.
@@ -439,7 +450,15 @@ final class AppCoordinator {
             let msg = errorMessage(err)
             if !msg.isEmpty {
                 if settingsStore.overlayEnabled {
-                    overlayController?.showError(message: msg)
+                    // if/else rather than a ternary: the type checker cannot
+                    // infer an optional labelled tuple holding a closure.
+                    let action: (title: String, handler: @MainActor () -> Void)?
+                    if err == .accessibilityPermissionDenied {
+                        action = ("Open System Settings", { [weak self] in self?.permissionManager.openAccessibilitySettings() })
+                    } else {
+                        action = nil
+                    }
+                    overlayController?.showError(message: msg, action: action)
                 }
                 if err != .accessibilityPermissionDenied {
                     overlayController?.dismiss(after: 3.0)

@@ -127,11 +127,13 @@ final class MenuBarController {
         if popover.isShown {
             popover.performClose(nil)
         } else {
-            showPopover()
+            showHistory()
         }
     }
 
-    private func showPopover() {
+    /// Opens the history popover anchored to the status item. Also used by
+    /// the overlay's "Show all" action.
+    func showHistory() {
         guard let button = statusItem.button else { return }
         // Let coordinator update historyEntries before we build the view
         onPopoverWillShow?()
