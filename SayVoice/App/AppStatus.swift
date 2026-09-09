@@ -9,8 +9,15 @@ final class AppStatus {
     var modelName: String = ""
 
     var pillText: String {
+        guard case .idle = state, !modelName.isEmpty else { return compactText }
+        return "Ready · \(modelName)"
+    }
+
+    /// The state word on its own, for hosts too narrow for the model name —
+    /// the history popover header is 320 pt wide and wraps without this.
+    var compactText: String {
         switch state {
-        case .idle:         return modelName.isEmpty ? "Ready" : "Ready · \(modelName)"
+        case .idle:         return "Ready"
         case .recording:    return "Recording"
         case .transcribing: return "Transcribing…"
         case .injecting:    return "Inserting…"

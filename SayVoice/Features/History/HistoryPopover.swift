@@ -23,7 +23,7 @@ struct HistoryPopover: View {
                 LogoMark(size: 22)
                 Text("SayVoice").font(DS.font(.bodyMedium)).foregroundStyle(DS.Colors.text.color)
                 Spacer(minLength: DS.Space.s8)
-                StatusPill(status: status)
+                StatusPill(status: status, compact: true)
             }
             .padding(.horizontal, DS.Space.s12).padding(.vertical, DS.Space.s12)
 

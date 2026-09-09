@@ -58,8 +58,9 @@ final class MenuBarController {
     }
 
     private func setupPopover() {
+        // No contentSize: the hosting controller measures the popover, and a
+        // fixed size only fights the view's own 320 pt frame.
         popover.behavior = .transient
-        popover.contentSize = NSSize(width: HistoryPopover.width, height: 420)
     }
 
     // MARK: - Click Handling
@@ -90,7 +91,13 @@ final class MenuBarController {
         onPopoverWillShow?()
 
         popover.contentViewController = NSHostingController(rootView: makeContent())
+        // The app is LSUIElement, so it is never activated by a status-item
+        // click on its own. Without this the search field gets no caret and
+        // the clear confirmation cannot present. Scoped to the popover: the
+        // coordinator restores the recording target app for text insertion.
+        NSApp.activate(ignoringOtherApps: true)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        popover.contentViewController?.view.window?.makeKey()
     }
 
     private func refreshPopoverContent() {
@@ -105,9 +112,11 @@ final class MenuBarController {
             hotkeyName: hotkeyName,
             onClear: { [weak self] in
                 self?.onClearHistory?()
-                // Rebuild the popover on the now-empty list
                 self?.historyEntries = []
-                self?.refreshPopoverContent()
+                // Rebuild on the next run-loop turn: swapping the hosting
+                // controller while the confirmation dialog is still dismissing
+                // pulls the view out from under it.
+                Task { @MainActor in self?.refreshPopoverContent() }
             },
             onSettings: { [weak self] in
                 self?.popover.performClose(nil)

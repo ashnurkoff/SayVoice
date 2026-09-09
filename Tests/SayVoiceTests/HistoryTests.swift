@@ -53,4 +53,39 @@ final class HistoryTests: XCTestCase {
             }
         }
     }
+
+    @MainActor
+    func testCompactStatusPillFitsThePopoverHeaderOnOneLine() {
+        let status = AppStatus(); status.modelName = "Large Turbo Q5"
+        XCTAssertEqual(status.pillText, "Ready \u{00B7} Large Turbo Q5")
+        XCTAssertEqual(status.compactText, "Ready")
+        // Before the coordinator names a model, both forms are the bare word.
+        XCTAssertEqual(AppStatus().pillText, "Ready")
+        XCTAssertEqual(AppStatus().compactText, "Ready")
+
+        for dark in [true, false] {
+            let full = idealSize(StatusPill(status: status), dark: dark)
+            let compact = idealSize(StatusPill(status: status, compact: true), dark: dark)
+            XCTAssertLessThan(compact.width, full.width, "compact drops the model name")
+            XCTAssertEqual(compact.height, full.height, accuracy: 0.5, "both stay one line")
+
+            // What the header leaves the pill at 320 pt: the popover's own
+            // horizontal padding, the 22 pt logo, the two 8 pt gaps and the
+            // "SayVoice" label.
+            let label = idealSize(Text("SayVoice").font(DS.font(.bodyMedium)), dark: dark)
+            let budget = HistoryPopover.width - 2 * DS.Space.s12 - 22 - 2 * DS.Space.s8 - label.width
+            XCTAssertLessThanOrEqual(compact.width, budget,
+                                     "the compact pill must fit the header without wrapping")
+        }
+    }
+
+    /// Ideal (unwrapped) size of a view, so a label that would wrap under a
+    /// narrower parent still reports the width it really wants.
+    @MainActor
+    private func idealSize<V: View>(_ view: V, dark: Bool) -> CGSize {
+        let host = NSHostingView(rootView: AnyView(view.fixedSize()))
+        host.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        host.layoutSubtreeIfNeeded()
+        return host.fittingSize
+    }
 }
