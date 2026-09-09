@@ -34,6 +34,10 @@ xcodebuild -project SayVoice.xcodeproj -scheme SayVoice -configuration Release -
 
 Run `xcodegen generate` again after adding, moving or deleting files.
 
+## Releases
+
+Download the disk image from [GitHub Releases](../../releases) and drag SayVoice to Applications — pushing a `v*` tag builds it on CI. To build one locally, run `Scripts/make-dmg` (add `--open` to mount it when it is done); the background is drawn by `Scripts/dmg-background.swift` into `Scripts/dmg/background.png`.
+
 ## Install
 
 Copy the built app into `/Applications`:

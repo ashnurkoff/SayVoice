@@ -1,17 +1,170 @@
 #!/bin/sh
-# Builds SayVoice in Release and packs it into a drag-to-Applications disk image.
-# Usage: Scripts/make-dmg [output.dmg]   (default: build/SayVoice-<version>.dmg)
+# Builds SayVoice in Release and packs it into a styled drag-to-Applications
+# disk image: the app on the left, an /Applications alias on the right, and
+# Scripts/dmg/background.png behind them.
+#
+# Usage: Scripts/make-dmg [output.dmg] [--open]
+#        (default output: build/SayVoice-<version>.dmg)
+#
+# The Finder styling pass needs a GUI login session. Without one — on a CI
+# runner, over ssh — it is skipped with a warning and the image is still
+# produced, unstyled but installable.
 set -e
 cd "$(dirname "$0")/.."
+
+VOLUME_NAME="SayVoice"
+OUT=""
+OPEN=0
+for arg in "$@"; do
+    case "$arg" in
+        --open) OPEN=1 ;;
+        -*) echo "make-dmg: unknown option $arg" >&2; exit 2 ;;
+        *) [ -n "$OUT" ] && { echo "make-dmg: more than one output path" >&2; exit 2; }
+           OUT=$arg ;;
+    esac
+done
+
+# ---------------------------------------------------------------- build
+
 [ -d SayVoice.xcodeproj ] || xcodegen generate >/dev/null
-xcodebuild -project SayVoice.xcodeproj -scheme SayVoice -configuration Release -derivedDataPath build build 2>&1 | grep -E "error:|BUILD"
+
+BUILD_LOG=$(mktemp -t sayvoice-build)
+if ! xcodebuild -project SayVoice.xcodeproj -scheme SayVoice \
+    -configuration Release -derivedDataPath build build >"$BUILD_LOG" 2>&1; then
+    echo "make-dmg: the Release build failed" >&2
+    grep -E "error:|BUILD FAILED" "$BUILD_LOG" | tail -40 >&2 || true
+    echo "make-dmg: full log at $BUILD_LOG" >&2
+    exit 1
+fi
+rm -f "$BUILD_LOG"
+
 APP=build/Build/Products/Release/SayVoice.app
+[ -d "$APP" ] || { echo "make-dmg: $APP is missing after the build" >&2; exit 1; }
 VERSION=$(defaults read "$PWD/$APP/Contents/Info.plist" CFBundleShortVersionString)
-OUT=${1:-build/SayVoice-$VERSION.dmg}
-STAGE=$(mktemp -d)
+[ -n "$OUT" ] || OUT=build/SayVoice-$VERSION.dmg
+mkdir -p "$(dirname "$OUT")"
+
+# ---------------------------------------------------------------- stage
+
+BACKGROUND=Scripts/dmg/background.png
+[ -f "$BACKGROUND" ] || swift Scripts/dmg-background.swift "$BACKGROUND" >/dev/null
+
+STAGE=$(mktemp -d -t sayvoice-dmg)
+RW_DMG=$(mktemp -u -t sayvoice-rw).dmg
+DEVICE=""
+
+cleanup() {
+    if [ -n "$DEVICE" ]; then hdiutil detach "$DEVICE" -quiet 2>/dev/null || true; fi
+    rm -rf "$STAGE"
+    rm -f "$RW_DMG"
+    return 0
+}
+trap cleanup EXIT INT TERM
+
 cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
+mkdir -p "$STAGE/.background"
+cp "$BACKGROUND" "$STAGE/.background/background.png"
+ICNS=$APP/Contents/Resources/AppIcon.icns
+
+# A read-write image with room for the .DS_Store Finder writes during styling.
+SIZE_MB=$(( $(du -sm "$STAGE" | cut -f1) + 64 ))
+hdiutil create -volname "$VOLUME_NAME" -srcfolder "$STAGE" -ov \
+    -format UDRW -fs HFS+ -size "${SIZE_MB}m" "$RW_DMG" >/dev/null
+
+# A volume left over from an earlier run would push this one to "SayVoice 1"
+# and the AppleScript below would then style the wrong disk.
+if [ -d "/Volumes/$VOLUME_NAME" ]; then
+    STALE=$(hdiutil info | grep -F "/Volumes/$VOLUME_NAME" | awk '{print $1}' | head -1)
+    if [ -n "$STALE" ]; then hdiutil detach "$STALE" -quiet 2>/dev/null || true; fi
+fi
+
+ATTACHED=$(hdiutil attach "$RW_DMG" -readwrite -noverify -noautoopen)
+DEVICE=$(printf '%s\n' "$ATTACHED" | grep '^/dev/' | grep 'Apple_HFS' | awk '{print $1}' | head -1)
+MOUNT=$(printf '%s\n' "$ATTACHED" | grep 'Apple_HFS' | head -1 | sed -E 's|^.*(/Volumes/.*)$|\1|')
+[ -n "$DEVICE" ] && [ -d "$MOUNT" ] || { echo "make-dmg: could not mount the staging image" >&2; exit 1; }
+
+# ---------------------------------------------------------------- style
+
+# Everything Finder needs to remember lives in the volume's .DS_Store, so this
+# has to run against a mounted volume in a GUI session. It is advisory: if it
+# fails the image is still perfectly usable, just plain.
+STYLE_LOG=$(mktemp -t sayvoice-style)
+if osascript >/dev/null 2>"$STYLE_LOG" <<APPLESCRIPT
+-- Bounded, so that a runner with no GUI session takes the warning branch below
+-- instead of blocking forever trying to launch Finder.
+with timeout of 60 seconds
+tell application "Finder"
+    tell disk "$VOLUME_NAME"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set the bounds of container window to {200, 120, 860, 520}
+        set viewOptions to the icon view options of container window
+        set arrangement of viewOptions to not arranged
+        set icon size of viewOptions to 128
+        set text size of viewOptions to 13
+        set background picture of viewOptions to file ".background:background.png"
+        set position of item "SayVoice.app" of container window to {165, 210}
+        set position of item "Applications" of container window to {495, 210}
+        update without registering applications
+        delay 2
+        close
+    end tell
+end tell
+end timeout
+APPLESCRIPT
+then
+    rm -f "$STYLE_LOG"
+else
+    echo "make-dmg: warning — Finder styling was skipped (no GUI session?);" \
+         "the image will open unstyled" >&2
+    sed 's/^/make-dmg:   /' "$STYLE_LOG" >&2 || true
+    rm -f "$STYLE_LOG"
+fi
+
+# The volume icon goes on after the styling pass, not before: Finder deletes a
+# .VolumeIcon.icns that is already there when it rewrites the volume's metadata.
+# The icon also needs the "has custom icon" bit on the volume root.
+if [ -f "$ICNS" ]; then
+    cp "$ICNS" "$MOUNT/.VolumeIcon.icns"
+    if command -v SetFile >/dev/null 2>&1; then
+        SetFile -a C "$MOUNT" || echo "make-dmg: warning — SetFile failed; no volume icon" >&2
+    else
+        echo "make-dmg: note — SetFile is unavailable; the volume keeps the default icon" >&2
+    fi
+fi
+
+sync
+sleep 1
+hdiutil detach "$DEVICE" -quiet 2>/dev/null || { sleep 3; hdiutil detach "$DEVICE" -force -quiet; }
+DEVICE=""
+
+# ---------------------------------------------------------------- convert
+
 rm -f "$OUT"
-hdiutil create -volname "SayVoice" -srcfolder "$STAGE" -ov -format UDZO -fs HFS+ "$OUT" >/dev/null
-rm -rf "$STAGE"
+hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$OUT" >/dev/null
+
+# ---------------------------------------------------------------- verify
+
+VERIFY=$(hdiutil attach "$OUT" -readonly -nobrowse -noverify -noautoopen)
+VERIFY_DEVICE=$(printf '%s\n' "$VERIFY" | grep '^/dev/' | grep 'Apple_HFS' | awk '{print $1}' | head -1)
+VERIFY_MOUNT=$(printf '%s\n' "$VERIFY" | grep 'Apple_HFS' | head -1 | sed -E 's|^.*(/Volumes/.*)$|\1|')
+MISSING=""
+[ -d "$VERIFY_MOUNT/SayVoice.app" ] || MISSING="$MISSING SayVoice.app"
+[ -L "$VERIFY_MOUNT/Applications" ] || MISSING="$MISSING Applications"
+[ -f "$VERIFY_MOUNT/.background/background.png" ] || MISSING="$MISSING .background/background.png"
+[ -f "$VERIFY_MOUNT/.DS_Store" ] || MISSING="$MISSING .DS_Store"
+[ -f "$VERIFY_MOUNT/.VolumeIcon.icns" ] || MISSING="$MISSING .VolumeIcon.icns"
+if [ -n "$VERIFY_DEVICE" ]; then
+    hdiutil detach "$VERIFY_DEVICE" -quiet 2>/dev/null \
+        || { sleep 3; hdiutil detach "$VERIFY_DEVICE" -force -quiet; }
+fi
+if [ -n "$MISSING" ]; then
+    # A missing .DS_Store only means the styling pass did not run.
+    echo "make-dmg: warning — the image is missing:$MISSING" >&2
+fi
+
+if [ "$OPEN" -eq 1 ]; then open "$OUT"; fi
 echo "$OUT"

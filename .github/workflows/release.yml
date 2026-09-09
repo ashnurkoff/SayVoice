@@ -1,0 +1,41 @@
+name: Release
+
+# Pushing a v* tag builds the disk image and publishes it as a GitHub release.
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  dmg:
+    # macos-26 is the newest generally available runner image and the one that
+    # ships Xcode 26; the app needs macOS 26 to build. Pinned rather than
+    # macos-latest so a future pointer move cannot change the toolchain silently.
+    runs-on: macos-26
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project
+        run: xcodegen generate
+
+      # A runner has no GUI login session, so the Finder styling pass inside
+      # make-dmg is skipped with a warning and the image comes out unstyled but
+      # installable. That must not fail the release.
+      - name: Build the disk image
+        run: |
+          mkdir -p build
+          Scripts/make-dmg "build/SayVoice-${GITHUB_REF_NAME}.dmg"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" build/*.dmg --generate-notes
