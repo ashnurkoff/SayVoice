@@ -22,6 +22,22 @@ final class OverlayRenderTests: XCTestCase {
                              "the Color.clear backing must keep the hosting view from collapsing")
     }
 
+    func testToggleRecordingFitsPanelWidthWithLongHotkeyName() {
+        let m = OverlayModel()
+        m.displayState = .recording
+        m.isToggleMode = true
+        m.hotkeyName = "Back mouse button on MX Master 3S"
+        m.recordingStart = Date()
+        // Offer the capsule's content width; the row must fit inside it.
+        // NSHostingView.fittingSize reports the *ideal* width and ignores the
+        // frame it is given, so it cannot see truncation. NSHostingController
+        // .sizeThatFits(in:) honours the proposal, which is what we need here.
+        let available = DS.Size.overlayWidth - 2 * DS.Space.s16
+        let controller = NSHostingController(rootView: RecordingContent(model: m))
+        let needed = controller.sizeThatFits(in: CGSize(width: available, height: 60)).width
+        XCTAssertLessThanOrEqual(needed, available, "recording row must not overflow the glass (needed \(needed), available \(available))")
+    }
+
     func testEveryStateRenders() {
         for state in [OverlayModel.DisplayState.recording, .transcribing, .result, .error] {
             let m = OverlayModel()

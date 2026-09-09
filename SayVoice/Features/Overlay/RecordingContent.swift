@@ -17,16 +17,23 @@ struct RecordingContent: View {
                     .foregroundStyle(DS.Colors.muted.color)
                     .lineLimit(1)
             }
-            .fixedSize(horizontal: true, vertical: false)
+            // No fixedSize: at 420 pt a long hotkey name must truncate rather
+            // than push the row out of the glass.
+            .layoutPriority(0)
 
+            // Yields width first — it is decoration, the timer and Stop are not.
             Waveform(levels: model.levelHistory, bars: model.isToggleMode ? 12 : 20, tint: DS.Colors.rec.color)
                 .frame(height: 22)
+                .frame(minWidth: 40, maxWidth: .infinity)
+                .layoutPriority(-1)
 
             RecordingTimer(startDate: model.recordingStart)
+                .layoutPriority(1)
 
             if model.isToggleMode {
                 Button("Stop") { model.onStop?() }
                     .buttonStyle(.dsSecondary)
+                    .layoutPriority(1)
             }
         }
     }
