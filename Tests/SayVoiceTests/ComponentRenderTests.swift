@@ -68,4 +68,15 @@ final class ComponentRenderTests: XCTestCase {
         XCTAssertEqual(s.width, 600, accuracy: 0.5)
         XCTAssertGreaterThan(s.height, 2 * DS.Size.settingsRow)
     }
+
+    func testDownloadProgressRendersEveryState() {
+        let states: [DownloadState] = [.idle, .running(fraction: 0.34, bytesPerSecond: 12_400_000, secondsLeft: 38), .failed("The network connection was lost."), .done]
+        for state in states {
+            for dark in [true, false] {
+                let s = renderSize(DownloadProgress(state: state, onStart: {}, onCancel: {}, onRetry: {}), width: 480, dark: dark)
+                XCTAssertEqual(s.width, 480, accuracy: 0.5)
+                XCTAssertGreaterThan(s.height, 20)
+            }
+        }
+    }
 }

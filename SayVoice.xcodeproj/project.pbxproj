@@ -55,6 +55,7 @@
 		BB83857B2CB706E5618DE9E3 /* Hotkey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FB8B98E685AE7F256F18828 /* Hotkey.swift */; };
 		C3DCE5B9A502A94AA360667F /* SilenceTrimmer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E3BF498ACF29D15AE737B6 /* SilenceTrimmer.swift */; };
 		C4CA06912FDFCD2F4E6D51B3 /* OverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C40BC4D8C5F4FB50FA3B1969 /* OverlayView.swift */; };
+		C6C7BDDF48BC76F0280C6FDA /* DownloadProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0911252E3E57A08EF13306C6 /* DownloadProgressTests.swift */; };
 		C89B080520BCB471F742A40B /* BarEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 951DBA1E2606550639F386FE /* BarEngineTests.swift */; };
 		D685D265AC5BD14B799BD339 /* TranscriptionEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E25D74B58C19CCD4E3F0DE1 /* TranscriptionEntry.swift */; };
 		D6F3F5C869EDBF00E7479406 /* RecordingContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = E56E8CBE7FB01002E6C77613 /* RecordingContent.swift */; };
@@ -66,6 +67,7 @@
 		EC45480E0C6DDC5AE7DA9164 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03F7A9ADE4B1E354F14E0F16 /* AppCoordinator.swift */; };
 		F1F5068207284C877BE31443 /* SettingsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE3E78B5078DB6EA1AB3B60 /* SettingsKeys.swift */; };
 		F5BE939DE119A3F32CAEC800 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99D6FF1337E573C9B9A1EE6C /* OverlayWindowController.swift */; };
+		FB97F03238C38799B1DDB23F /* DownloadProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04B611C90617138E103CAD6D /* DownloadProgress.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -82,6 +84,8 @@
 		02BA69862721C362C8E02143 /* OverlayModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayModel.swift; sourceTree = "<group>"; };
 		03F7A9ADE4B1E354F14E0F16 /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		0499C125D53AE37B4D2E062E /* Orb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Orb.swift; sourceTree = "<group>"; };
+		04B611C90617138E103CAD6D /* DownloadProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadProgress.swift; sourceTree = "<group>"; };
+		0911252E3E57A08EF13306C6 /* DownloadProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadProgressTests.swift; sourceTree = "<group>"; };
 		0AD5E2802B500CCC9890B58A /* SayVoice.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SayVoice.entitlements; sourceTree = "<group>"; };
 		0CE3E78B5078DB6EA1AB3B60 /* SettingsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsKeys.swift; sourceTree = "<group>"; };
 		0FFEDFC408C13DBE86405472 /* TranscriptionHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionHistoryStore.swift; sourceTree = "<group>"; };
@@ -218,6 +222,7 @@
 				951DBA1E2606550639F386FE /* BarEngineTests.swift */,
 				469085334F93C2A3AA864578 /* ComponentRenderTests.swift */,
 				EAA16E63693CBD6B6818FDD9 /* DesignTokensTests.swift */,
+				0911252E3E57A08EF13306C6 /* DownloadProgressTests.swift */,
 				390220034D196834BBB73BF8 /* FontsTests.swift */,
 				10D4F45FC49D8B1E72D923CC /* HotkeyEventDecisionTests.swift */,
 				6B09F146B901F81429C02DED /* ModelCatalogTests.swift */,
@@ -338,6 +343,7 @@
 				EFA389FB49147E0383FD4E19 /* Buttons.swift */,
 				3761F5C786CFB7C552DEFD2C /* Card.swift */,
 				7980D7E64D5BDD4719957C7A /* Chip.swift */,
+				04B611C90617138E103CAD6D /* DownloadProgress.swift */,
 				45E1D5A7B5AAD34CD9FBC39A /* GlassPanel.swift */,
 				5DD8846E2B0AD43605E5424A /* KeyCap.swift */,
 				0499C125D53AE37B4D2E062E /* Orb.swift */,
@@ -492,6 +498,7 @@
 				EBD81A007DA7B9C46FE8F1F6 /* Card.swift in Sources */,
 				70EFD700F9EFE53E68D4719E /* Chip.swift in Sources */,
 				2AE491BF33078D918C730B6A /* Colors.swift in Sources */,
+				FB97F03238C38799B1DDB23F /* DownloadProgress.swift in Sources */,
 				3D7ED14A7DE11C1918092141 /* ErrorContent.swift in Sources */,
 				8935E88B0BE51F6263AD2B9E /* GlassPanel.swift in Sources */,
 				5939999CB205A8080986C54A /* HistoryPopoverView.swift in Sources */,
@@ -539,6 +546,7 @@
 				C89B080520BCB471F742A40B /* BarEngineTests.swift in Sources */,
 				7F051D7849E55A8A86DE6063 /* ComponentRenderTests.swift in Sources */,
 				2DCE7A21BCB9625EA921E33E /* DesignTokensTests.swift in Sources */,
+				C6C7BDDF48BC76F0280C6FDA /* DownloadProgressTests.swift in Sources */,
 				2A297CC4784844B117B37A83 /* FontsTests.swift in Sources */,
 				256244A5CBBEB17256224333 /* HotkeyEventDecisionTests.swift in Sources */,
 				B330C821678DFDC8F1DB5E70 /* ModelCatalogTests.swift in Sources */,
