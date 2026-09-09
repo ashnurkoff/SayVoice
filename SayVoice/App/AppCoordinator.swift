@@ -309,10 +309,17 @@ final class AppCoordinator {
     // MARK: - Onboarding
 
     private func showOnboardingWindow() {
-        let view = OnboardingView(
-            permissionManager: permissionManager,
-            modelManager: modelManager,
-            onComplete: { [weak self] in
+        // A stale TCC entry survives a rebuild — the toggle reads as on while
+        // AXIsProcessTrusted says no — so it is cleared before the first prompt,
+        // exactly as the normal startup path does.
+        if !permissionManager.isAccessibilityGranted {
+            resetAccessibilityEntry()
+        }
+
+        let model = OnboardingModel(
+            permissions: permissionManager, settings: settingsStore,
+            modelManager: modelManager, downloads: modelDownloads,
+            onFinished: { [weak self] in
                 guard let self else { return }
                 self.settingsStore.hasCompletedOnboarding = true
                 self.onboardingWindow?.close()
@@ -321,21 +328,14 @@ final class AppCoordinator {
                 self.startHotkeyAndPermissions()
             }
         )
-
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 300),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
+        let view = OnboardingView(
+            model: model,
+            onHotkeyChanged: { [weak self] hotkey in self?.hotkeyListener?.apply(hotkey) },
+            onHotkeyModeChanged: { [weak self] isToggle in self?.hotkeyListener?.apply(isToggle: isToggle) }
         )
-        window.title = "SayVoice — Настройка"
-        window.contentView = NSHostingView(rootView: view)
-        window.center()
-        window.isReleasedWhenClosed = false
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-
-        self.onboardingWindow = window
+        let window = AppWindow.make(title: "Welcome to SayVoice", size: OnboardingView.windowSize, content: view)
+        AppWindow.present(window)
+        onboardingWindow = window
     }
 
     // MARK: - Sound Feedback

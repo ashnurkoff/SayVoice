@@ -23,19 +23,7 @@ final class ModelManager {
         case turboQ8    = "ggml-large-v3-turbo-q8_0"
         case turbo      = "ggml-large-v3-turbo"
 
-        /// Размеры сверены с HuggingFace API (десятичные МБ, как в Finder).
-        var fileSize: String {
-            switch self {
-            case .base:    return "148 МБ"
-            case .small:   return "488 МБ"
-            case .turboQ5: return "574 МБ"
-            case .turboQ8: return "874 МБ"
-            case .turbo:   return "1.62 ГБ"
-            }
-        }
-
-        /// Same numbers as `fileSize`, with English units — for the rewritten
-        /// settings UI. `fileSize` stays as it is for the legacy screens.
+        /// Sizes checked against the HuggingFace API (decimal MB, as in Finder).
         var sizeText: String {
             switch self {
             case .base:    return "148 MB"
@@ -53,17 +41,6 @@ final class ModelManager {
             case .turboQ5: return "Large Turbo Q5"
             case .turboQ8: return "Large Turbo Q8"
             case .turbo:   return "Large Turbo"
-            }
-        }
-
-        /// Короткая пометка о назначении модели — бейдж рядом с названием.
-        var badge: String {
-            switch self {
-            case .base:    return "самая быстрая"
-            case .small:   return "лёгкая"
-            case .turboQ5: return "рекомендуется"
-            case .turboQ8: return "точнее"
-            case .turbo:   return "максимум качества"
             }
         }
 
@@ -182,25 +159,6 @@ final class ModelManager {
             relay.adopt(session: session, task: task)
             continuation.onTermination = { [relay] _ in relay.cancelAndInvalidate() }
             task.resume()
-        }
-    }
-
-    /// Fraction-only view of `downloadModelProgress`, kept for the onboarding
-    /// step until Phase 3 replaces it. It inherits the same caveat: a cancelled
-    /// consumer sees the stream finish rather than throw, so confirm completion
-    /// with `isModelAvailable(_:)`.
-    func downloadModel(_ size: ModelSize) -> AsyncThrowingStream<Double, Error> {
-        let source = downloadModelProgress(size)
-        return AsyncThrowingStream { continuation in
-            let relay = Task {
-                do {
-                    for try await p in source { continuation.yield(p.fraction) }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in relay.cancel() }
         }
     }
 }
