@@ -1,0 +1,22 @@
+#!/bin/sh
+# Regenerates docs/screenshots from the code: every surface, both themes.
+#
+# Runs the SurfaceScreenshotTests harness with SAYVOICE_RENDER_DIR pointing at
+# docs/screenshots. Without that variable the harness skips itself, so an
+# ordinary test run never writes files.
+#
+# xcodebuild does not hand its own environment to the test host; it forwards
+# the variables prefixed with TEST_RUNNER_ and strips the prefix. Both spellings
+# are exported so the harness also sees the variable when it is run directly.
+set -e
+
+cd "$(dirname "$0")/.."
+
+if [ ! -d SayVoice.xcodeproj ]; then
+    xcodegen generate
+fi
+
+SAYVOICE_RENDER_DIR="$PWD/docs/screenshots" \
+TEST_RUNNER_SAYVOICE_RENDER_DIR="$PWD/docs/screenshots" \
+    xcodebuild -project SayVoice.xcodeproj -scheme SayVoice -derivedDataPath build test \
+    -only-testing:SayVoiceTests/SurfaceScreenshotTests
