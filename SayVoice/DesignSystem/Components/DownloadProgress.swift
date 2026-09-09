@@ -37,7 +37,9 @@ struct DownloadProgress: View {
             VStack(alignment: .leading, spacing: DS.Space.s8) {
                 ProgressView(value: min(1, max(0, fraction)))
                     .progressViewStyle(.linear)
-                    .tint(DS.Colors.accent.color)
+                    // Progress bars are neutral (spec 3.1): the highlight
+                    // colour belongs to active controls, not to a transfer.
+                    .tint(DS.Colors.muted.color)
                 HStack {
                     Text(Self.statusText(fraction: fraction, bytesPerSecond: speed, secondsLeft: eta))
                         .font(DS.font(.valueSmall))

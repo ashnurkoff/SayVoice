@@ -31,7 +31,11 @@ final class ModelCatalogTests: XCTestCase {
         // A cancelled consumer must see the stream end promptly — as nil
         // (AsyncThrowingStream ends on cancellation) or as an error — instead
         // of hanging on the connection until the transfer finishes.
-        let manager = ModelManager()
+        // The only test that touches the network: it needs a real transfer to
+        // prove a cancelled consumer stops it. Everything else runs offline.
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = ModelManager(modelsDirectory: directory)
         let finalURL = manager.modelURL(for: .base)
         let existedBefore = FileManager.default.fileExists(atPath: finalURL.path)
         let task = Task { () -> String in

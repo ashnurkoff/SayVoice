@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// Hotkey assignment field: click, press a key or a mouse button, done.
@@ -54,6 +55,9 @@ struct HotkeyRecorder: View {
             }
         }
         .onDisappear(perform: stopRecording)
+        // A local monitor swallows keys, so it must never outlive the window:
+        // onDisappear alone does not always fire when the window closes.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { _ in stopRecording() }
     }
 
     // MARK: - Recording

@@ -4,68 +4,114 @@ import Foundation
 /// one per model, and owns the running tasks so Cancel actually cancels.
 @MainActor @Observable
 final class ModelDownloads {
-    private let modelManager: ModelManager
+    private let progressSource: @MainActor (ModelManager.ModelSize) -> AsyncThrowingStream<ModelDownloadProgress, Error>
+    private let isAvailable: @MainActor (ModelManager.ModelSize) -> Bool
     private var states: [ModelManager.ModelSize: DownloadState] = [:]
     private var tasks: [ModelManager.ModelSize: Task<Void, Never>] = [:]
 
     /// Called when a download finishes successfully.
     var onCompleted: ((ModelManager.ModelSize) -> Void)?
 
-    init(modelManager: ModelManager) {
-        self.modelManager = modelManager
+    /// The two closures default to `modelManager`; tests inject stubs to drive
+    /// the state machine without a network transfer. (Swift cannot spell that
+    /// default in the parameter list, since it derives from another parameter,
+    /// hence the optionals.)
+    init(
+        modelManager: ModelManager,
+        progressSource: (@MainActor (ModelManager.ModelSize) -> AsyncThrowingStream<ModelDownloadProgress, Error>)? = nil,
+        isAvailable: (@MainActor (ModelManager.ModelSize) -> Bool)? = nil
+    ) {
+        self.progressSource = progressSource ?? { modelManager.downloadModelProgress($0) }
+        self.isAvailable = isAvailable ?? { modelManager.isModelAvailable($0) }
     }
 
     /// `nil` when the model is already on disk (nothing to offer),
     /// `.idle` when it can be downloaded, otherwise the live state.
+    ///
+    /// `.done` is transient — once the file is on disk this returns `nil`, so
+    /// the settings list never renders the done state; the row shows its
+    /// downloaded chip instead.
     func state(for size: ModelManager.ModelSize) -> DownloadState? {
-        if modelManager.isModelAvailable(size) { return nil }
+        if isAvailable(size) { return nil }
         return states[size] ?? .idle
     }
+
+    #if DEBUG
+    /// Test hook: the stored state, before `state(for:)` hides it behind the
+    /// on-disk check.
+    func storedState(for size: ModelManager.ModelSize) -> DownloadState? { states[size] }
+    #endif
+
+    /// Longest span of samples the speed is averaged over.
+    private static let rateWindow: TimeInterval = 2
+    /// Shortest span that gives a speed worth showing.
+    private static let minimumRateSpan: TimeInterval = 0.5
+    /// Ten state writes a second are plenty; more only makes the label flicker.
+    private static let writeInterval: TimeInterval = 0.1
 
     func start(_ size: ModelManager.ModelSize) {
         guard tasks[size] == nil else { return }
         states[size] = .running(fraction: 0, bytesPerSecond: nil, secondsLeft: nil)
         tasks[size] = Task { [self] in
-            var previous: (bytes: Int64, at: TimeInterval)? = nil
+            // The speed is averaged over a rolling window rather than the last
+            // two samples, so one slow chunk does not halve the number on screen.
+            var window: [(bytes: Int64, at: TimeInterval)] = []
+            var lastWrite: TimeInterval = 0
             do {
-                for try await p in modelManager.downloadModelProgress(size) {
+                for try await p in progressSource(size) {
                     let now = Date().timeIntervalSinceReferenceDate
-                    let (speed, eta) = Self.rate(previous: previous, current: (p.bytesReceived, now), total: p.totalBytes)
-                    // Sample the rate at most every half second so it does not flicker.
-                    if previous == nil || now - previous!.at >= 0.5 {
-                        previous = (p.bytesReceived, now)
-                    }
+                    window.append((p.bytesReceived, now))
+                    while window.count > 1, now - window[0].at > Self.rateWindow { window.removeFirst() }
+                    let baseline = now - window[0].at >= Self.minimumRateSpan ? window[0] : nil
+                    let (speed, eta) = Self.rate(previous: baseline, current: (p.bytesReceived, now), total: p.totalBytes)
+
+                    // Cancel has already shown the row as idle; a yield still in
+                    // flight must not put it back into running.
+                    guard !Task.isCancelled else { continue }
+                    guard now - lastWrite >= Self.writeInterval else { continue }
+                    lastWrite = now
                     states[size] = .running(fraction: p.fraction, bytesPerSecond: speed, secondsLeft: eta)
                 }
-                // A cancelled consumer sees the stream simply finish rather than
-                // throw, so success is confirmed on disk — never inferred from
-                // the stream ending.
-                if Task.isCancelled {
-                    states[size] = .idle
-                } else if modelManager.isModelAvailable(size) {
-                    states[size] = .done
-                    onCompleted?(size)
-                } else {
-                    states[size] = .failed("Download did not complete.")
-                }
+                settle(size, cancelled: false, message: nil)
             } catch is CancellationError {
-                states[size] = .idle
+                settle(size, cancelled: true, message: nil)
             } catch {
                 // The transfer's cancellation error type is not contractual —
                 // URLSession surfaces `URLError(.cancelled)` — so cancellation
                 // is decided by the task, not by the error.
-                states[size] = Task.isCancelled ? .idle : .failed(error.localizedDescription)
+                settle(size, cancelled: false, message: error.localizedDescription)
             }
             tasks[size] = nil
         }
     }
 
     func cancel(_ size: ModelManager.ModelSize) {
-        tasks[size]?.cancel()
+        guard let task = tasks[size] else { return }
+        task.cancel()
+        // Show it at once — the transfer unwinds a moment later.
+        states[size] = .idle
     }
 
-    /// Bytes per second and seconds left from two samples; nil until there
-    /// are two samples or when the total is unknown.
+    /// The one place a finished transfer's final state is decided, always in
+    /// this order. A cancelled consumer sees the stream simply finish rather
+    /// than throw, so success is confirmed on disk — never inferred from the
+    /// stream ending; and the file wins over cancellation, because a transfer
+    /// that completed just as Cancel was pressed did produce a usable model.
+    private func settle(_ size: ModelManager.ModelSize, cancelled: Bool, message: String?) {
+        if isAvailable(size) {
+            states[size] = .done
+            onCompleted?(size)
+        } else if cancelled || Task.isCancelled {
+            states[size] = .idle
+        } else {
+            states[size] = .failed(message ?? "Download did not complete.")
+        }
+    }
+
+    /// Bytes per second and seconds left from two samples — `previous` is the
+    /// oldest sample still inside the rolling window. Both are nil without a
+    /// baseline; the time left is nil on its own when the total is unknown or
+    /// already reached.
     nonisolated static func rate(
         previous: (bytes: Int64, at: TimeInterval)?,
         current: (bytes: Int64, at: TimeInterval),

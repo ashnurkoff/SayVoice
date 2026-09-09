@@ -117,7 +117,7 @@ Rule of boundaries: a component knows nothing about `SettingsStore`, `ModelManag
 
 - **Size** 780 × 600, not resizable. Icon rail 64 wide on the left, content on the right.
 - **Sections** (rail order): General · Recognition · Dictionary · Insertion · System. Each section has a header: `section` title, one-line `muted` subtitle, and on the right a status pill "Ready · Turbo Q5" (orb `.idle` + text) that reflects app state and selected model.
-- **General:** one card "Recording hotkey" containing `HotkeyRecorder` and the Hold/Toggle segmented picker on one line, with the mode note underneath; one card with rows "Show overlay while recording" and "Sound feedback".
+- **General:** one card "Recording hotkey" containing `HotkeyRecorder` on one row and the Hold/Toggle segmented picker on the next, each a `SettingsRow`, with the mode note under the picker; one card with rows "Show overlay while recording" and "Sound feedback".
 - **Recognition:** card "Model" with `ModelRow` per model (Base, Small, Large Turbo Q5 *recommended*, Large Turbo Q8, Large Turbo); selecting a model that is not on disk shows `DownloadProgress` inside its row. Card "Language" with the existing 12-entry menu picker and its note. This is the only section allowed to scroll.
 - The default model on a fresh install is Large Turbo Q5 (`ModelSize.recommended`).
 - **Dictionary:** card with `TagField` and the note explaining that terms are wrapped into a punctuated prompt.

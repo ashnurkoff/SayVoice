@@ -9,10 +9,19 @@ final class SettingsRenderTests: XCTestCase {
         let settings = SettingsStore()
         let status = AppStatus(); status.modelName = "Large Turbo Q5"
         let router = SettingsRouter(); router.section = section
-        let manager = ModelManager()
+        // A temp models directory keeps the rendered rows the same on any Mac,
+        // whether or not models are installed.
+        let manager = ModelManager(modelsDirectory: temporaryModelsDirectory())
         return SettingsView(settings: settings, status: status, router: router,
                             downloads: ModelDownloads(modelManager: manager), modelManager: manager,
                             onHotkeyChanged: nil, onHotkeyModeChanged: nil)
+    }
+
+    private func temporaryModelsDirectory() -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("SayVoiceTests-\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        return url
     }
 
     /// Fitting height of one section's content column at the window's content width.

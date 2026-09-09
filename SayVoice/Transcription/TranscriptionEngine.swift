@@ -85,7 +85,7 @@ actor TranscriptionEngine {
     func transcribe(
         _ samples: [Float],
         language: String = "auto",
-        modelSize: ModelManager.ModelSize = .small,
+        modelSize: ModelManager.ModelSize = .recommended,
         vocabularyPrompt: String? = nil
     ) async throws -> String {
         guard samples.count >= Self.minimumSampleCount else {

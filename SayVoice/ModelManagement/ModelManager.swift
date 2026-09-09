@@ -133,75 +133,55 @@ final class ModelManager {
         }
     }
 
-    nonisolated static let modelsDirectory: URL = {
+    /// Where the app keeps its models. Tests inject a temporary directory so
+    /// the suite never reads or writes the real one.
+    nonisolated static let defaultModelsDirectory: URL = {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return appSupport.appendingPathComponent("SayVoice/Models")
     }()
 
+    let modelsDirectory: URL
+
+    init(modelsDirectory: URL = ModelManager.defaultModelsDirectory) {
+        self.modelsDirectory = modelsDirectory
+    }
+
     func modelURL(for size: ModelSize) -> URL {
-        Self.modelsDirectory.appendingPathComponent(size.fileName)
+        modelsDirectory.appendingPathComponent(size.fileName)
     }
 
     func isModelAvailable(_ size: ModelSize) -> Bool {
         FileManager.default.fileExists(atPath: modelURL(for: size).path)
     }
 
-    /// Streams byte-level progress. Cancelling the consuming task stops the
-    /// transfer and removes the partial file; the stream then simply finishes
-    /// (iteration returns `nil`), so completion must be confirmed with
-    /// `isModelAvailable(_:)` rather than inferred from the stream ending.
+    /// Streams byte-level progress of a `URLSessionDownloadTask`. Cancelling
+    /// the consuming task stops the transfer and discards the partial file
+    /// (URLSession never hands it over, so no model file is published); the
+    /// stream then simply finishes (iteration returns `nil`), so completion
+    /// must be confirmed with `isModelAvailable(_:)` rather than inferred from
+    /// the stream ending.
     func downloadModelProgress(_ size: ModelSize) -> AsyncThrowingStream<ModelDownloadProgress, Error> {
-        let directory = Self.modelsDirectory
-        let fileName = size.fileName
+        let directory = modelsDirectory
+        let finalURL = modelURL(for: size)
         let url = size.downloadURL
 
         return AsyncThrowingStream { continuation in
-            let worker = Task.detached {
-                let tempURL = directory.appendingPathComponent(fileName + ".tmp")
-                let finalURL = directory.appendingPathComponent(fileName)
-                do {
-                    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-
-                    let (bytes, response) = try await URLSession.shared.bytes(from: url)
-                    let totalBytes = response.expectedContentLength
-
-                    if FileManager.default.fileExists(atPath: tempURL.path) {
-                        try FileManager.default.removeItem(at: tempURL)
-                    }
-                    FileManager.default.createFile(atPath: tempURL.path, contents: nil)
-                    let handle = try FileHandle(forWritingTo: tempURL)
-                    defer { try? handle.close() }
-
-                    var received: Int64 = 0
-                    var chunk = Data()
-                    chunk.reserveCapacity(65_536)
-
-                    for try await byte in bytes {
-                        // URLSession.AsyncBytes throws CancellationError here once the
-                        // task is cancelled, which is what ends the stream promptly.
-                        chunk.append(byte)
-                        received += 1
-                        if chunk.count >= 65_536 {
-                            try handle.write(contentsOf: chunk)
-                            chunk.removeAll(keepingCapacity: true)
-                            continuation.yield(ModelDownloadProgress(bytesReceived: received, totalBytes: totalBytes))
-                        }
-                    }
-                    if !chunk.isEmpty { try handle.write(contentsOf: chunk) }
-
-                    if FileManager.default.fileExists(atPath: finalURL.path) {
-                        try FileManager.default.removeItem(at: finalURL)
-                    }
-                    try FileManager.default.moveItem(at: tempURL, to: finalURL)
-                    continuation.yield(ModelDownloadProgress(bytesReceived: received, totalBytes: max(totalBytes, received)))
-                    continuation.finish()
-                    print("[SayVoice] Model downloaded: \(finalURL.path)")
-                } catch {
-                    try? FileManager.default.removeItem(at: tempURL)
-                    continuation.finish(throwing: error)
-                }
+            do {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            } catch {
+                continuation.finish(throwing: error)
+                return
             }
-            continuation.onTermination = { _ in worker.cancel() }
+
+            // URLSession owns the partial file: it writes to its own temp
+            // location and hands it over only once the transfer completed, so
+            // there is no half-written model to clean up after a cancel.
+            let relay = DownloadRelay(finalURL: finalURL, continuation: continuation)
+            let session = URLSession(configuration: .default, delegate: relay, delegateQueue: nil)
+            let task = session.downloadTask(with: url)
+            relay.adopt(session: session, task: task)
+            continuation.onTermination = { [relay] _ in relay.cancelAndInvalidate() }
+            task.resume()
         }
     }
 
@@ -222,5 +202,100 @@ final class ModelManager {
             }
             continuation.onTermination = { _ in relay.cancel() }
         }
+    }
+}
+
+// MARK: - Download delegate
+
+/// Bridges `URLSessionDownloadTask` callbacks onto an `AsyncThrowingStream`.
+///
+/// A download task transfers on URLSession's own threads instead of one byte
+/// at a time through Swift concurrency, which is what keeps a model download
+/// network-bound. State is touched only from the session's serial delegate
+/// queue and from `cancelAndInvalidate`, hence `@unchecked Sendable`.
+private final class DownloadRelay: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+    private let finalURL: URL
+    private let continuation: AsyncThrowingStream<ModelDownloadProgress, Error>.Continuation
+    private let lock = NSLock()
+    private var session: URLSession?
+    private var task: URLSessionDownloadTask?
+    private var received: Int64 = 0
+    private var expected: Int64 = 0
+
+    init(finalURL: URL, continuation: AsyncThrowingStream<ModelDownloadProgress, Error>.Continuation) {
+        self.finalURL = finalURL
+        self.continuation = continuation
+    }
+
+    /// The relay holds the session and the task so the stream's termination
+    /// handler needs to capture nothing but the relay itself.
+    func adopt(session: URLSession, task: URLSessionDownloadTask) {
+        lock.lock()
+        self.session = session
+        self.task = task
+        lock.unlock()
+    }
+
+    /// Called once the stream ends, whether it finished or the consumer went
+    /// away. Cancelling a finished task is a no-op.
+    func cancelAndInvalidate() {
+        lock.lock()
+        let task = self.task
+        let session = self.session
+        self.task = nil
+        self.session = nil
+        lock.unlock()
+        task?.cancel()
+        session?.finishTasksAndInvalidate()
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didWriteData bytesWritten: Int64,
+        totalBytesWritten: Int64,
+        totalBytesExpectedToWrite: Int64
+    ) {
+        received = totalBytesWritten
+        expected = max(0, totalBytesExpectedToWrite)
+        continuation.yield(ModelDownloadProgress(bytesReceived: received, totalBytes: expected))
+    }
+
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        // The system deletes `location` as soon as this returns, so the move
+        // has to happen here rather than on another queue.
+        do {
+            if FileManager.default.fileExists(atPath: finalURL.path) {
+                try FileManager.default.removeItem(at: finalURL)
+            }
+            try FileManager.default.moveItem(at: location, to: finalURL)
+            let size = Self.fileSize(of: finalURL) ?? received
+            continuation.yield(ModelDownloadProgress(bytesReceived: size, totalBytes: max(expected, size)))
+            continuation.finish()
+            print("[SayVoice] Model downloaded: \(finalURL.path)")
+        } catch {
+            continuation.finish(throwing: error)
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let error else {
+            // Success already finished the stream in didFinishDownloadingTo;
+            // finishing twice is a no-op.
+            continuation.finish()
+            return
+        }
+        // A cancelled transfer surfaces as URLError.cancelled — the consumer
+        // asked for it, so report it as cancellation.
+        if (error as? URLError)?.code == .cancelled {
+            continuation.finish(throwing: CancellationError())
+        } else {
+            continuation.finish(throwing: error)
+        }
+    }
+
+    private static func fileSize(of url: URL) -> Int64? {
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path) else { return nil }
+        return (attributes[.size] as? NSNumber)?.int64Value
     }
 }
