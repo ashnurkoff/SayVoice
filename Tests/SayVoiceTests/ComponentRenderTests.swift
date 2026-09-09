@@ -79,4 +79,24 @@ final class ComponentRenderTests: XCTestCase {
             }
         }
     }
+
+    func testModelRowRendersSelectedDownloadedAndDownloading() {
+        let variants: [(Bool, Bool, DownloadState?)] = [
+            (true, true, nil),
+            (false, false, .idle),
+            (false, false, .running(fraction: 0.6, bytesPerSecond: 8_000_000, secondsLeft: 20)),
+            (false, false, .failed("Timed out")),
+        ]
+        for (selected, downloaded, download) in variants {
+            for dark in [true, false] {
+                let s = renderSize(
+                    ModelRow(name: "Large Turbo Q5", badge: "recommended", badgeIsAccent: true, qualitySteps: 4, sizeText: "574 MB",
+                             isSelected: selected, isDownloaded: downloaded, download: download,
+                             onSelect: {}, onDownload: {}, onCancel: {}, onRetry: {}),
+                    width: 640, dark: dark)
+                XCTAssertEqual(s.width, 640, accuracy: 0.5)
+                XCTAssertGreaterThan(s.height, download == nil ? 36 : 60)
+            }
+        }
+    }
 }

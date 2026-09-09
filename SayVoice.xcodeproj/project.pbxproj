@@ -53,6 +53,7 @@
 		B330C821678DFDC8F1DB5E70 /* ModelCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B09F146B901F81429C02DED /* ModelCatalogTests.swift */; };
 		B7B557F0EBA0351C4177B889 /* SayVoiceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5097803D53133D9C2E6F872B /* SayVoiceApp.swift */; };
 		BB83857B2CB706E5618DE9E3 /* Hotkey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FB8B98E685AE7F256F18828 /* Hotkey.swift */; };
+		C00745177AA84CE59EBD5560 /* ModelRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1492AA996134134B84EFE3C9 /* ModelRow.swift */; };
 		C3DCE5B9A502A94AA360667F /* SilenceTrimmer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E3BF498ACF29D15AE737B6 /* SilenceTrimmer.swift */; };
 		C4CA06912FDFCD2F4E6D51B3 /* OverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C40BC4D8C5F4FB50FA3B1969 /* OverlayView.swift */; };
 		C6C7BDDF48BC76F0280C6FDA /* DownloadProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0911252E3E57A08EF13306C6 /* DownloadProgressTests.swift */; };
@@ -90,6 +91,7 @@
 		0CE3E78B5078DB6EA1AB3B60 /* SettingsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsKeys.swift; sourceTree = "<group>"; };
 		0FFEDFC408C13DBE86405472 /* TranscriptionHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionHistoryStore.swift; sourceTree = "<group>"; };
 		10D4F45FC49D8B1E72D923CC /* HotkeyEventDecisionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyEventDecisionTests.swift; sourceTree = "<group>"; };
+		1492AA996134134B84EFE3C9 /* ModelRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelRow.swift; sourceTree = "<group>"; };
 		24C912800F8FD21D6EA9533C /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		2B1C73EC2488CF69B7F1907E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3761F5C786CFB7C552DEFD2C /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
@@ -346,6 +348,7 @@
 				04B611C90617138E103CAD6D /* DownloadProgress.swift */,
 				45E1D5A7B5AAD34CD9FBC39A /* GlassPanel.swift */,
 				5DD8846E2B0AD43605E5424A /* KeyCap.swift */,
+				1492AA996134134B84EFE3C9 /* ModelRow.swift */,
 				0499C125D53AE37B4D2E062E /* Orb.swift */,
 				EC905357278F8564AE990E73 /* SettingsRow.swift */,
 				C329881EF62D25530F0ABE6C /* Waveform.swift */,
@@ -510,6 +513,7 @@
 				E2F235F0382FE5AFEE5A1E07 /* MenuBarController.swift in Sources */,
 				8BD513ED768A02A22573CA84 /* ModelDownloadView.swift in Sources */,
 				E1EF13CF6778866393201F18 /* ModelManager.swift in Sources */,
+				C00745177AA84CE59EBD5560 /* ModelRow.swift in Sources */,
 				1ABFFA8F664A6AEBA304F64B /* Motion.swift in Sources */,
 				5B8573296AE4682592CBDCF6 /* OnboardingView.swift in Sources */,
 				2B43818DB3DA7B8096E33EB6 /* Orb.swift in Sources */,

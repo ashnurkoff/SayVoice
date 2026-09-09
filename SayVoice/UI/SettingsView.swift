@@ -30,7 +30,7 @@ struct SettingsView: View {
 
             Section("Модель распознавания") {
                 ForEach(ModelManager.ModelSize.allCases, id: \.self) { model in
-                    ModelRow(
+                    LegacyModelRow(
                         model: model,
                         isSelected: model == selectedModel,
                         isDownloaded: modelManager?.isModelAvailable(model) ?? false
@@ -131,7 +131,7 @@ struct SettingsView: View {
 // MARK: - Строка модели
 
 /// Строка списка моделей: выбор, название, бейджи и отметка о загрузке.
-private struct ModelRow: View {
+private struct LegacyModelRow: View {
     let model: ModelManager.ModelSize
     let isSelected: Bool
     let isDownloaded: Bool
