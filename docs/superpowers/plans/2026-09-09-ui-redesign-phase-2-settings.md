@@ -2000,9 +2000,9 @@ instead of a separate window; the menu bar loses its download item."
 
 ```bash
 grep -rn "ModelDownloadView\|HotkeyRecorderField\|showModelDownloadWindow\|onDownloadModel\|LegacySettingsView\|LegacyModelRow\|PlaceholderSection" SayVoice Tests || echo "no stale symbols"
-grep -rln "[А-Яа-яЁё]" SayVoice/DesignSystem SayVoice/Features Tests SayVoice/App/AppStatus.swift SayVoice/App/AppWindow.swift || echo "no Cyrillic in new files"
+grep -rn "[А-Яа-яЁё]" SayVoice/DesignSystem SayVoice/Features Tests SayVoice/App/AppStatus.swift SayVoice/App/AppWindow.swift | grep -v '\.tag("' || echo "no Cyrillic in new files"   # language endonyms in the picker are exempt
 grep -rn "Color(red:\|Color(nsColor:\|\.blue\b\|\.purple\b\|\.orange\b\|\.green\b" SayVoice/DesignSystem/Components SayVoice/Features/Settings || echo "no literal colours"
-grep -rn "SettingsStore\|ModelManager\|Hotkey\b\|AppCoordinator" SayVoice/DesignSystem || echo "design system references no feature types"
+grep -rn "SettingsStore\|ModelManager\|Hotkey\b\|AppCoordinator" SayVoice/DesignSystem | grep -v "^[^:]*:[0-9]*: *///\?" || echo "design system references no feature types"   # doc comments exempt
 xcodegen generate && git diff --exit-code --stat SayVoice.xcodeproj && echo "project in sync"
 ```
 
