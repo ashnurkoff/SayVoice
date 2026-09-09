@@ -86,7 +86,7 @@ Digits in `value` styles use tabular figures. Fonts are bundled under `Resources
 
 - State changes: 180 ms ease-out.
 - Orb: spring (response 0.35, damping 0.7) between states; recording pulse 1.2 s; transcribing "breath" 1.6 s.
-- Overlay result auto-dismiss: 2 s, cancelled while the pointer is over the panel.
+- Overlay result auto-dismiss: 2 s, paused while the pointer is over the panel (at most 10 s). Error cards: 3 s, or 8 s when they carry an action; tapping the action dismisses.
 - `accessibilityReduceMotion`: pulse and breath are replaced by static colour; state changes become instant.
 
 ## 4. Component library (`DesignSystem/Components`)
@@ -109,7 +109,7 @@ Rule of boundaries: a component knows nothing about `SettingsStore`, `ModelManag
 | `EmptyState` | Icon + title + hint for empty history | `EmptyState(icon:title:hint:)` |
 | Buttons | System `Button` styles with token colours: `.primary`, `.secondary`, `.link`, `.destructive` | `ButtonStyle` extensions |
 
-`Badge`, `TagChip`, `StopButton` and the local `caption()` extension that exist today are removed; their uses migrate to `Chip`, `Buttons` and `DS.font(.caption)`.
+`Badge`, `StopButton` and the local `caption()` extension that exist today are removed; their uses migrate to `Chip`, `Buttons` and `DS.font(.caption)`.
 
 ## 5. Surfaces
 
@@ -119,6 +119,7 @@ Rule of boundaries: a component knows nothing about `SettingsStore`, `ModelManag
 - **Sections** (rail order): General · Recognition · Dictionary · Insertion · System. Each section has a header: `section` title, one-line `muted` subtitle, and on the right a status pill "Ready · Turbo Q5" (orb `.idle` + text) that reflects app state and selected model.
 - **General:** one card "Recording hotkey" containing `HotkeyRecorder` and the Hold/Toggle segmented picker on one line, with the mode note underneath; one card with rows "Show overlay while recording" and "Sound feedback".
 - **Recognition:** card "Model" with `ModelRow` per model (Base, Small, Large Turbo Q5 *recommended*, Large Turbo Q8, Large Turbo); selecting a model that is not on disk shows `DownloadProgress` inside its row. Card "Language" with the existing 12-entry menu picker and its note. This is the only section allowed to scroll.
+- The default model on a fresh install is Large Turbo Q5 (`ModelSize.recommended`).
 - **Dictionary:** card with `TagField` and the note explaining that terms are wrapped into a punctuated prompt.
 - **Insertion:** card with "Method" segmented (Clipboard / Accessibility), "Restore clipboard after paste" toggle, and the two dynamic notes that exist today.
 - **System:** rows "Open at login", version, "Source code" link, "Licenses" (opens a sheet listing whisper.cpp, Onest, JetBrains Mono).
@@ -131,7 +132,7 @@ Rule of boundaries: a component knows nothing about `SettingsStore`, `ModelManag
 - **Recording (hold mode):** `Orb(.recording)` · label "Listening" with sub-label "release ⌥ to finish" (hotkey name from settings) · `Waveform` · `value` timer.
 - **Recording (toggle mode):** same, sub-label "press ⌃⌥⌘D again to finish", and a "Stop" `.secondary` button inside the capsule on the right. The panel accepts mouse events in the states that have controls or hover behaviour — toggle-mode recording, result, and error with an action — and is mouse-transparent otherwise.
 - **Transcribing:** `Orb(.transcribing)` · "Transcribing…" · waveform replaced by a thin indeterminate bar of the same width so the layout does not jump.
-- **Result:** `Orb(.done)` · text up to 4 lines in `bodyLarge` · action row: "Copy", "Show all" (opens the history popover), duration in `valueSmall`. Auto-dismiss 2 s unless hovered.
+- **Result:** `Orb(.done)` · text up to 4 lines in `bodyLarge` · action row: "Copy", "Show all" (opens the history popover), duration in `valueSmall`. Auto-dismiss 2 s, paused while hovered (at most 10 s).
 - **Error:** `Orb(.error)` · message · optional action ("Open Settings" for the accessibility case).
 - Glass: `.glassEffect(.regular.tint(accent.opacity(0.10)), in: shape)` with `glassLine` border and `glassHighlight` inner top line.
 
@@ -153,7 +154,7 @@ Rule of boundaries: a component knows nothing about `SettingsStore`, `ModelManag
 
 ### 5.5 Model download
 
-The separate window and `ModelDownloadView.swift` are removed. When the selected model is missing at launch or on selection, the app opens Settings → Recognition and highlights that model's row, which hosts `DownloadProgress`. Onboarding uses the same component.
+The separate window and `ModelDownloadView.swift` are removed. When the selected model is missing at launch or at transcription time, the app opens Settings → Recognition with that model's row outlined (`warn` border) and its `DownloadProgress` ready; `ModelDownloads` owns the transfer and cancellation. Onboarding (Phase 3) uses the same component and coordinator.
 
 ### 5.6 Menu bar
 
@@ -169,10 +170,11 @@ SayVoice/
   DesignSystem/
     Tokens/               Colors.swift · Typography.swift · Spacing.swift · Motion.swift
     Components/           Orb · GlassPanel · Card · SettingsRow · Chip · KeyCap · ModelRow
-                          DownloadProgress · Waveform · TagField · HotkeyRecorder · EmptyState · Buttons
+                          DownloadProgress · Waveform · TagField · EmptyState · Buttons
   Features/
     Settings/             SettingsView · SettingsRail · GeneralSection · RecognitionSection
                           DictionarySection · InsertionSection · SystemSection · LicensesSheet
+                          HotkeyRecorder
     Overlay/              OverlayWindowController · OverlayModel · OverlayView
                           RecordingContent · TranscribingContent · ResultContent · ErrorContent
     Onboarding/           OnboardingView · ArtPanel · WelcomeStep · PermissionsStep · ModelStep · HotkeyStep
@@ -196,7 +198,7 @@ SayVoice/
 |---|---|
 | `ModelManagement/ModelDownloadView.swift` | `DownloadProgress` inside `ModelRow` |
 | `Badge`, `ModelRow`, `caption()` inside `SettingsView.swift` | `Chip`, `ModelRow`, `DS.font(.caption)` in `DesignSystem` |
-| `TagChip` inside `TagField.swift` | `Chip` |
+| `TagChip` stays private to `TagField` — a removable chip with a hover state is not a `Chip`; both use the same tokens. | — |
 | `StopButton`, `GlassCard`, `PulsingDot`, `BouncingDots` inside `OverlayView.swift` | `Buttons.secondary`, `GlassPanel`, `Orb` |
 | Model download step inside `OnboardingView.swift` | `ModelStep` using `ModelRow` + `DownloadProgress` |
 | Three `NSWindow` construction blocks in `AppCoordinator` | `AppWindow.make` |

@@ -278,7 +278,7 @@ unit tests do not install an event tap or prompt for permissions."
   - `enum DS.TextStyle { display, section, title, bodyLarge, body, bodyMedium, caption, value, valueSmall }`
   - `DS.font(_ style: DS.TextStyle) -> Font`
   - `DS.Space.{s4,s8,s12,s16,s20,s28}: CGFloat`, `DS.Radius.{control=6,row=10,card=14,overlayCard=18}`, `DS.Size.{settingsRow=44,popoverRow=48,overlayWidth=420}`
-  - `DS.Motion.{stateChange: Animation, orb: Animation, pulseDuration=1.2, breathDuration=1.6, resultAutoDismiss=2.0}`
+  - `DS.Motion.{stateChange: Animation, orb: Animation, pulseDuration=1.2, breathDuration=1.6, resultAutoDismiss=2.0, errorAutoDismiss=3.0, errorWithActionAutoDismiss=8.0, hoverPauseLimit=10}`
 
 - [ ] **Step 1: Write the failing token tests**
 

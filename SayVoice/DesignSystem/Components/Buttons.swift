@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Button styles in token colours. Pressed state dims; disabled state fades.
-/// Primary is the only style that uses the accent — one per screen.
+/// Primary and Link use the accent (spec §3.1: interactive controls); at most one primary per screen.
 struct DSPrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 

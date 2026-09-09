@@ -1,6 +1,7 @@
 import XCTest
 @testable import SayVoice
 
+@MainActor
 final class VocabularyTests: XCTestCase {
 
     func testTokensSplitOnCommaAndNewlineAndTrim() {
