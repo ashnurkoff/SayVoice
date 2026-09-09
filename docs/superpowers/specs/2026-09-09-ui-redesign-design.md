@@ -65,7 +65,7 @@ Exactly three text levels exist. If a fourth seems necessary, the layout is wron
 | `bodyLarge` | Onest | 15 / 500 | Overlay result text, primary labels |
 | `body` | Onest | 13 / 400–500 | Everything else |
 | `caption` | Onest | 12 / 400 | Explanatory notes |
-| `value` | JetBrains Mono | 14 / 600 | Timer, hotkey caps |
+| `value` | JetBrains Mono | 14 / 500 | Timer, hotkey caps |
 | `valueSmall` | JetBrains Mono | 12 / 500 | File sizes, durations, language tags |
 
 Digits in `value` styles use tabular figures. Fonts are bundled under `Resources/Fonts/` with their OFL licence files alongside, registered via `ATSApplicationFontsPath` in `Info.plist`. `Typography.swift` exposes `DS.font(.body)` etc.; if a face is missing at runtime it falls back to the system font of the same size and weight, silently.

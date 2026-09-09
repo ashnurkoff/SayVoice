@@ -12,7 +12,7 @@ extension DS {
         case body         // 13 / 400
         case bodyMedium   // 13 / 500
         case caption      // 12 / 400  explanatory notes
-        case value        // 14 / 600  mono: timer, hotkey caps
+        case value        // 14 / 500  mono: timer, hotkey caps
         case valueSmall   // 12 / 500  mono: sizes, durations, language tags
     }
 
@@ -20,10 +20,12 @@ extension DS {
         static let textFamily = "Onest"
         static let monoFamily = "JetBrains Mono"
 
-        /// True when the bundled face is registered. Checked through CoreText,
-        /// which is safe off the main thread.
-        static var isOnestAvailable: Bool { isFamilyAvailable(textFamily) }
-        static var isMonoAvailable: Bool { isFamilyAvailable(monoFamily) }
+        /// True when the bundled face is registered. Resolved once: the fonts are
+        /// registered at launch from `ATSApplicationFontsPath` and the set never
+        /// changes afterwards, while the CoreText lookup costs milliseconds — far
+        /// too much for a check on every `DS.font(_:)` call in a view body.
+        static let isOnestAvailable: Bool = isFamilyAvailable(textFamily)
+        static let isMonoAvailable: Bool = isFamilyAvailable(monoFamily)
 
         private static func isFamilyAvailable(_ family: String) -> Bool {
             ((CTFontManagerCopyAvailableFontFamilyNames() as? [String]) ?? []).contains(family)
@@ -39,7 +41,7 @@ extension DS {
         case .body:       return text(13, .regular)
         case .bodyMedium: return text(13, .medium)
         case .caption:    return text(12, .regular)
-        case .value:      return mono(14, .semibold)
+        case .value:      return mono(14, .medium)
         case .valueSmall: return mono(12, .medium)
         }
     }
