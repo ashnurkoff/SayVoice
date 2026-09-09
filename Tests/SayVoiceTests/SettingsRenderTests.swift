@@ -39,4 +39,19 @@ final class SettingsRenderTests: XCTestCase {
             XCTAssertLessThan(h, 1200, "unexpectedly tall — check for a runaway layout")
         }
     }
+
+    func testDictionaryInsertionSystemFitWithoutScrolling() {
+        for section in [SettingsSection.dictionary, .insertion, .system] {
+            for dark in [true, false] {
+                XCTAssertLessThanOrEqual(contentHeight(section, dark: dark), SettingsView.windowSize.height, "\(section) must fit in 600 pt")
+            }
+        }
+    }
+
+    func testLicenseTextsAreBundled() {
+        for item in LicensesSheet.items {
+            XCTAssertFalse(item.text.isEmpty, "\(item.name) licence text missing from the bundle")
+            XCTAssertTrue(item.text.contains("Permission is hereby granted") || item.text.contains("SIL OPEN FONT LICENSE"), item.name)
+        }
+    }
 }

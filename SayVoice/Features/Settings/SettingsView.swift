@@ -45,8 +45,12 @@ struct SettingsView: View {
             GeneralSection(settings: settings, onHotkeyChanged: onHotkeyChanged, onHotkeyModeChanged: onHotkeyModeChanged)
         case .recognition:
             RecognitionSection(settings: settings, modelManager: modelManager, downloads: downloads, router: router)
-        case .dictionary, .insertion, .system:
-            PlaceholderSection(section: section)   // replaced in Task 8
+        case .dictionary:
+            DictionarySection(settings: settings)
+        case .insertion:
+            InsertionSection(settings: settings)
+        case .system:
+            SystemSection(settings: settings)
         }
     }
 
@@ -70,12 +74,4 @@ struct SettingsView: View {
         return probe.fittingSize.height
     }
     #endif
-}
-
-/// Temporary stand-in while sections land one by one.
-struct PlaceholderSection: View {
-    let section: SettingsSection
-    var body: some View {
-        Card { SettingsRow("\(section.title) — coming in the next task") { EmptyView() } }
-    }
 }

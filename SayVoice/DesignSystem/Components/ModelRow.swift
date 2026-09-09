@@ -69,7 +69,10 @@ struct ModelRow: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-                .strokeBorder(isSelected ? DS.Colors.accent.color : (isHighlighted ? DS.Colors.warn.color : DS.Colors.line.color), lineWidth: 1)
+                // Highlight wins over selection: the coordinator highlights the
+                // *selected* model when it is missing, and an accent border
+                // there would show nothing new.
+                .strokeBorder(isHighlighted ? DS.Colors.warn.color : (isSelected ? DS.Colors.accent.color : DS.Colors.line.color), lineWidth: 1)
         )
         .animation(DS.Motion.stateChange, value: isSelected)
         .accessibilityElement(children: .combine)

@@ -19,8 +19,10 @@ final class AppCoordinator {
     private let settingsStore = SettingsStore()
     private let historyStore = TranscriptionHistoryStore()
     private var accessibilityPollTask: Task<Void, Never>?
-    private var downloadWindow: NSWindow?
     private var settingsWindow: NSWindow?
+    private let status = AppStatus()
+    private let settingsRouter = SettingsRouter()
+    private lazy var modelDownloads = ModelDownloads(modelManager: modelManager)
 
     /// Приложение, в котором началась диктовка. Текст уходит именно туда, а не туда,
     /// где пользователь оказался к моменту окончания: в режиме переключателя запись
@@ -31,8 +33,7 @@ final class AppCoordinator {
     func start() {
         menuBarController = MenuBarController()
         menuBarController?.onQuit = { NSApp.terminate(nil) }
-        menuBarController?.onDownloadModel = { [weak self] in self?.showModelDownloadWindow() }
-        menuBarController?.onShowSettings = { [weak self] in self?.showSettingsWindow() }
+        menuBarController?.onShowSettings = { [weak self] in self?.showSettings() }
         menuBarController?.onClearHistory = { [weak self] in
             self?.historyStore.clear()
             self?.menuBarController?.historyEntries = []
@@ -47,6 +48,12 @@ final class AppCoordinator {
         hotkeyListener = HotkeyListener(coordinator: self)
         hotkeyListener?.apply(settingsStore.hotkey)
         hotkeyListener?.apply(isToggle: settingsStore.hotkeyIsToggle)
+
+        status.modelName = (ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .recommended).displayName
+        modelDownloads.onCompleted = { [weak self] _ in
+            guard let self else { return }
+            if case .error(.modelNotLoaded) = self.state { self.state = .idle }
+        }
 
         // Onboarding: show wizard on first launch, then proceed with normal startup
         if !settingsStore.hasCompletedOnboarding {
@@ -154,6 +161,7 @@ final class AppCoordinator {
 
             do {
                 let modelSize = ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .recommended
+                status.modelName = modelSize.displayName
                 let prompt = settingsStore.vocabularyPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
                 let text = try await transcriptionEngine.transcribe(
                     samples,
@@ -203,7 +211,9 @@ final class AppCoordinator {
                 case .recordingTooShort:
                     state = .idle
                 case .modelNotLoaded:
-                    showModelDownloadWindow()
+                    // `modelSize` above lives in the `do` block that just threw.
+                    let modelSize = ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .recommended
+                    showSettings(section: .recognition, highlight: modelSize)
                     state = .error(.modelNotLoaded)
                 case .emptyResult:
                     state = .error(.transcriptionFailed("Не услышал ничего"))
@@ -266,77 +276,33 @@ final class AppCoordinator {
             // Step 3: Check model availability (only after mic dialog resolved)
             let modelSize = ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .recommended
             if !modelManager.isModelAvailable(modelSize) {
-                print("[SayVoice] Model \(modelSize.rawValue) not found — showing download window")
-                showModelDownloadWindow()
+                print("[SayVoice] Model \(modelSize.rawValue) not found — opening Settings → Recognition")
+                showSettings(section: .recognition, highlight: modelSize)
             }
         }
-    }
-
-    // MARK: - Model Download
-
-    private func showModelDownloadWindow() {
-        // Don't open multiple windows
-        if let existing = downloadWindow, existing.isVisible { return }
-
-        let selectedModel = ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .recommended
-        let view = ModelDownloadView(modelManager: modelManager, modelSize: selectedModel) { [weak self] in
-            guard let self else { return }
-            print("[SayVoice] Model download complete")
-            self.downloadWindow?.close()
-            self.downloadWindow = nil
-            if case .error(.modelNotLoaded) = self.state {
-                self.state = .idle
-            }
-        }
-
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 340, height: 200),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "SayVoice"
-        window.contentView = NSHostingView(rootView: view)
-        window.center()
-        window.isReleasedWhenClosed = false
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-
-        self.downloadWindow = window
     }
 
     // MARK: - Settings
 
-    private func showSettingsWindow() {
+    func showSettings(section: SettingsSection = .general, highlight: ModelManager.ModelSize? = nil) {
+        settingsRouter.section = section
+        settingsRouter.highlightedModel = highlight
+        status.modelName = (ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .recommended).displayName
+
         // Don't open multiple windows
         if let existing = settingsWindow, existing.isVisible {
-            existing.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            AppWindow.present(existing)
             return
         }
-
-        let view = LegacySettingsView(
-            settings: settingsStore,
-            modelManager: modelManager,
+        let view = SettingsView(
+            settings: settingsStore, status: status, router: settingsRouter,
+            downloads: modelDownloads, modelManager: modelManager,
             onHotkeyChanged: { [weak self] hotkey in self?.hotkeyListener?.apply(hotkey) },
             onHotkeyModeChanged: { [weak self] isToggle in self?.hotkeyListener?.apply(isToggle: isToggle) }
         )
-
-        let window = NSWindow(
-            // Размер должен совпадать с .frame в SettingsView — иначе окно обрежет содержимое.
-            contentRect: NSRect(x: 0, y: 0, width: 580, height: 760),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "SayVoice — Настройки"
-        window.contentView = NSHostingView(rootView: view)
-        window.center()
-        window.isReleasedWhenClosed = false
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-
-        self.settingsWindow = window
+        let window = AppWindow.make(title: "SayVoice Settings", size: SettingsView.windowSize, content: view)
+        AppWindow.present(window)
+        settingsWindow = window
     }
 
     // MARK: - Onboarding
@@ -415,6 +381,7 @@ final class AppCoordinator {
 
     private func handleStateChange(from old: AppState, to new: AppState) {
         menuBarController?.setState(new)
+        status.state = new
 
         switch new {
         case .idle:

@@ -11,7 +11,6 @@ final class MenuBarController {
 
     // Callbacks
     var onShowSettings: (() -> Void)?
-    var onDownloadModel: (() -> Void)?
     var onQuit: (() -> Void)?
     var onClearHistory: (() -> Void)?
     var onPopoverWillShow: (() -> Void)?
@@ -91,10 +90,6 @@ final class MenuBarController {
     private func setupMenu() {
         let m = NSMenu()
         m.addItem(NSMenuItem(title: "SayVoice", action: nil, keyEquivalent: ""))
-        m.addItem(.separator())
-        let downloadItem = NSMenuItem(title: "Скачать модель...", action: #selector(handleDownloadModel), keyEquivalent: "")
-        downloadItem.target = self
-        m.addItem(downloadItem)
         m.addItem(.separator())
         let settingsItem = NSMenuItem(title: "Настройки...", action: #selector(handleSettings), keyEquivalent: ",")
         settingsItem.target = self
@@ -183,10 +178,6 @@ final class MenuBarController {
     }
 
     // MARK: - Menu Actions
-
-    @objc private func handleDownloadModel() {
-        onDownloadModel?()
-    }
 
     @objc private func handleSettings() {
         onShowSettings?()
