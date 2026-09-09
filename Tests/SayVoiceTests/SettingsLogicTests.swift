@@ -156,6 +156,16 @@ final class SettingsLogicTests: XCTestCase {
         XCTAssertEqual(w.contentView?.frame.size, NSSize(width: 300, height: 200))
         XCTAssertFalse(w.styleMask.contains(.resizable))
         XCTAssertFalse(w.isReleasedWhenClosed)
+        XCTAssertTrue(w.styleMask.contains(.closable), "an ordinary window keeps its close button")
+        w.close()
+    }
+
+    /// Onboarding cannot be skipped: the permissions it grants are what the app
+    /// runs on, so its window has no close button. Quit stays on the menu bar.
+    func testANonClosableWindowHasNoCloseButton() {
+        let w = AppWindow.make(title: "Test", size: NSSize(width: 300, height: 200), closable: false, content: Text("x"))
+        XCTAssertFalse(w.styleMask.contains(.closable))
+        XCTAssertTrue(w.styleMask.contains(.titled), "the title bar itself stays")
         w.close()
     }
 

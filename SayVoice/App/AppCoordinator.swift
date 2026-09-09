@@ -127,7 +127,19 @@ final class AppCoordinator {
                 try await audioRecorder.startCapture(onLevel: onLevel)
             } catch {
                 print("[SayVoice] Audio capture failed: \(error)")
-                state = .error(.microphonePermissionDenied)
+                // Only a permission problem gets the permission card. Anything
+                // else — no input device, an engine that would not start —
+                // used to be reported as a denied microphone, which sent the
+                // user to a System Settings pane that was already correct.
+                let isPermissionProblem: Bool
+                if let audioError = error as? AudioError, case .permissionDenied = audioError {
+                    isPermissionProblem = true
+                } else {
+                    isPermissionProblem = !permissionManager.isMicrophoneGranted
+                }
+                state = isPermissionProblem
+                    ? .error(.microphonePermissionDenied)
+                    : .error(.transcriptionFailed(error.localizedDescription))
             }
         }
     }
@@ -226,7 +238,11 @@ final class AppCoordinator {
                     showSettings(section: .recognition, highlight: modelSize)
                     state = .error(.modelNotLoaded)
                 case .emptyResult:
-                    state = .error(.transcriptionFailed("Didn't catch anything"))
+                    // Kept out of `default` for its silence, not its wording:
+                    // hearing nothing is an ordinary outcome, not a fault to
+                    // log. The copy comes from the engine — repeating the
+                    // literal here is how the two versions drifted apart.
+                    state = .error(.transcriptionFailed(err.localizedDescription))
                 default:
                     print("[SayVoice] Transcription error: \(err)")
                     state = .error(.transcriptionFailed(err.localizedDescription))
@@ -350,11 +366,15 @@ final class AppCoordinator {
             },
             onHotkeyModeChanged: { [weak self] isToggle in self?.hotkeyListener?.apply(isToggle: isToggle) }
         )
-        let window = AppWindow.make(title: "Welcome to SayVoice", size: OnboardingView.windowSize, content: view)
-        // Closing the window from its own close button skips every step's
-        // onDisappear, and the permission poll must not outlive it. Filtered by
-        // `object`, so only this window counts. A second call would otherwise
-        // leak the first token, so it is dropped before the new one is made.
+        let window = AppWindow.make(
+            title: "Welcome to SayVoice", size: OnboardingView.windowSize,
+            closable: false, content: view
+        )
+        // A programmatic close still fires willClose and still skips every
+        // step's onDisappear, so the permission poll must not outlive it.
+        // Filtered by `object`, so only this window counts. A second call would
+        // otherwise leak the first token, so it is dropped before the new one
+        // is made.
         removeOnboardingCloseObserver()
         onboardingCloseObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification, object: window, queue: .main
@@ -484,14 +504,7 @@ final class AppCoordinator {
     }
 
     private func errorMessage(_ error: AppError) -> String {
-        switch error {
-        case .microphonePermissionDenied:    return "No microphone access"
-        case .accessibilityPermissionDenied: return "Enable SayVoice in Accessibility"
-        case .modelNotLoaded:                return "Model not loaded"
-        case .transcriptionFailed:           return "Didn't catch anything"
-        case .injectionFailed:               return "Couldn't insert text"
-        case .recordingTooShort:             return ""
-        }
+        ErrorCopy.message(for: error)
     }
 
     // MARK: - Debug WAV

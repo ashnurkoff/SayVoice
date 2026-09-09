@@ -1,3 +1,5 @@
+> **Historical** — describes SayVoice as of 2026-09-08, before the UI redesign. The root README and `docs/superpowers/specs/2026-09-09-ui-redesign-design.md` describe the current app.
+
 # M2 — Audio capture ✅ FINISHED
 
 **Goal:** capture PCM audio from the microphone while the hotkey is held. Convert it into the whisper.cpp format: 16kHz, mono, Float32. Confirm the data is correct by saving a debug WAV file.

@@ -1,3 +1,5 @@
+> **Historical** — describes SayVoice as of 2026-09-08, before the UI redesign. The root README and `docs/superpowers/specs/2026-09-09-ui-redesign-design.md` describe the current app.
+
 # SayVoice
 
 A native macOS application for on-device voice transcription. Hold the hotkey, say a phrase, release — the text appears in the active field instantly. No clouds, complete privacy.

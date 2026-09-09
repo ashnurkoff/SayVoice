@@ -123,7 +123,7 @@ final class SettingsStore {
     /// "translated" English speech into Russian (the EN→RU bug). See
     /// legacyRussianVocabularyPrompt.
     static let defaultVocabularyPrompt =
-        "API, deployment, frontend, backend, commit, pull request, feature, bug, SwiftUI, Xcode, TypeScript, React, endpoint, refactor, staging, production."
+        "API, deployment, frontend, backend, commit, pull request, feature, bug, SwiftUI, Xcode, TypeScript, React, endpoint, refactor, staging, production"
 
     /// The old default: a Russian sentence. It pulled whisper towards Russian
     /// and broke English dictation. Kept only to migrate a stored value — when

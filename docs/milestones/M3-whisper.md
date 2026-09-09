@@ -1,3 +1,5 @@
+> **Historical** — describes SayVoice as of 2026-09-08, before the UI redesign. The root README and `docs/superpowers/specs/2026-09-09-ui-redesign-design.md` describe the current app.
+
 # M3 — whisper.cpp integration
 
 **Goal:** transcribe the captured audio locally through whisper.cpp with Metal acceleration. The result is a line of text in the console. Russian and English are both supported with no manual configuration.

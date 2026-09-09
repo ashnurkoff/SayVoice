@@ -1,3 +1,5 @@
+> **Historical** — describes SayVoice as of 2026-09-08, before the UI redesign. The root README and `docs/superpowers/specs/2026-09-09-ui-redesign-design.md` describe the current app.
+
 # M5 — Polish
 
 **Goal:** a feature-complete v1.0 that is pleasant to use every day. Settings, the transcription history, sound feedback, onboarding, error handling.

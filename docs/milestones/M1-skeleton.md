@@ -1,3 +1,5 @@
+> **Historical** — describes SayVoice as of 2026-09-08, before the UI redesign. The root README and `docs/superpowers/specs/2026-09-09-ui-redesign-design.md` describe the current app.
+
 # M1 — The application skeleton (DONE)
 
 **Goal:** a working macOS menu bar application with no Dock icon that reacts to a global hotkey. No transcription — only the skeleton with visual feedback.
