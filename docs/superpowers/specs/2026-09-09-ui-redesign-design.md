@@ -153,6 +153,7 @@ Rule of boundaries: a component knows nothing about `SettingsStore`, `ModelManag
 - **Width** 320. Header: logo mark + "SayVoice" + status pill. Search field. List rows: text (2-line clamp), meta line in `valueSmall` — coarse relative time ("just now", "5 min", "yesterday"), duration, language tag when known. Copy action appears on hover; a brief "Copied" state replaces it.
 - Footer: "Clear…" (`.destructive`, asks for confirmation) and "Settings". The gear icon in the header is removed — one entry point.
 - Empty: `EmptyState` with the current hotkey name in the hint.
+- The list is measured and framed at its own height, capped at 360, so the popover hugs what it holds — one dictation opens a short popover, and a search that narrows the list shrinks it while it is open (`NSHostingController.sizingOptions = .preferredContentSize`). Amended 2026-09-09.
 
 ### 5.5 Model download
 

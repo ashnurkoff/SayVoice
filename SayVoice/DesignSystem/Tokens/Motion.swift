@@ -1,5 +1,14 @@
 import SwiftUI
 
+extension EnvironmentValues {
+    /// Renders motion in its resting state, as Reduce Motion does. Set by the
+    /// screenshot harness, which captures one frame and would otherwise catch a
+    /// one-shot entrance halfway through it; `accessibilityReduceMotion` itself
+    /// is read-only, so this is the switch a renderer can throw. Same idea as
+    /// `dsGlassFallback` for the overlay.
+    @Entry var dsStaticMotion: Bool = false
+}
+
 extension DS {
     /// Motion tokens (spec §3.4). Views must also honour
     /// `accessibilityReduceMotion`; these are the values for when motion is on.

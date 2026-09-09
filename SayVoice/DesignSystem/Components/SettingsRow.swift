@@ -67,8 +67,12 @@ struct SettingsRowLayout: Layout {
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let m = measure(width: proposal.width, subviews: subviews)
-        return CGSize(width: proposal.width ?? m.text.width + spacing + m.control.width,
-                      height: max(m.text.height, m.control.height))
+        // An unbounded or infinite proposal gets the row's ideal width, the
+        // same guard `measure` applies — returning `.infinity` here would hand
+        // an infinite width to whatever is measuring the card.
+        let ideal = m.text.width + spacing + m.control.width
+        let width = (proposal.width?.isFinite ?? false) ? proposal.width! : ideal
+        return CGSize(width: width, height: max(m.text.height, m.control.height))
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {

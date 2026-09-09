@@ -41,10 +41,10 @@ struct SettingsView: View {
         }
     }
 
-    /// The content column. A scrolling section keeps the header's margins but
-    /// hands the rest of the height to its own scroll area, which then reaches
-    /// the window's bottom edge; every other section sits inside the full 28 pt
-    /// margin with a spacer under it.
+    /// The content column. A scrolling section keeps the header's margins on
+    /// three sides but hands the rest of the height to its own scroll area,
+    /// which then reaches the window's bottom edge; every other section sits
+    /// inside the full 28 pt margin with a spacer under it.
     @ViewBuilder
     private var column: some View {
         if router.section.scrollsToBottomEdge {
@@ -53,9 +53,12 @@ struct SettingsView: View {
                     .padding(.horizontal, Self.contentPadding)
                 sectionContent(router.section)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    // No trailing padding: the section draws its own closing
-                    // hairline flush with the window.
                     .padding(.leading, Self.contentPadding)
+                    // The section keeps 8 pt inside its scroll view as a gutter
+                    // for the indicator, so it takes the remaining 20 here and
+                    // its cards line up with the header and every other
+                    // section. Only the *bottom* margin is given up.
+                    .padding(.trailing, Self.contentPadding - DS.Space.s8)
             }
             .padding(.top, Self.contentPadding)
         } else {

@@ -19,6 +19,12 @@ import XCTest
 /// - The waveform renders flat. `BarEngine` smooths towards the level over
 ///   successive frames, and a capture is always the first one.
 /// - Hover-only affordances — the Copy action on a history row — are absent.
+/// - Every surface is rendered with `dsStaticMotion`, which puts motion in the
+///   same resting state Reduce Motion does. A capture is one frame, and the
+///   done mark's entrance would otherwise be caught mid-spring — half faded,
+///   with its halo already blown out. The capture now shows what a Reduce
+///   Motion user sees, and the same frame on every run. The recording pulse and
+///   the transcribing breath already captured at rest, so nothing else moves.
 @MainActor
 final class SurfaceScreenshotTests: XCTestCase {
 
@@ -175,7 +181,7 @@ final class SurfaceScreenshotTests: XCTestCase {
     /// settles — otherwise the capture shows the list stretched to its cap.
     private func render<V: View>(_ view: V, size: CGSize?, name: String, into directory: URL) throws {
         for dark in [true, false] {
-            let host = NSHostingView(rootView: AnyView(view))
+            let host = NSHostingView(rootView: AnyView(view.environment(\.dsStaticMotion, true)))
             host.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
             let bounds: CGRect
             if let size {

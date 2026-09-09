@@ -35,11 +35,16 @@ struct ModelStep: View {
                         // list, not one per row: five of them would not fit the
                         // window, and its status line needs the width.
                         download: nil,
-                        onSelect: { model.settings.modelSize = size.settingsString },
+                        onSelect: { model.select(size) },
                         onDownload: {},
                         onCancel: {},
                         onRetry: {}
                     )
+                    // While one row is downloading, the others are not choices:
+                    // they say so by stepping back rather than by going silent
+                    // under a click that does nothing.
+                    .opacity(model.isDownloadingTarget && size != model.runningDownload ? 0.6 : 1)
+                    .animation(DS.Motion.stateChange, value: model.isDownloadingTarget)
                 }
                 if let download {
                     DownloadProgress(state: download,

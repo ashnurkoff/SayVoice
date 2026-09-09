@@ -27,7 +27,7 @@ final class ModelCatalogTests: XCTestCase {
         for m in ModelManager.ModelSize.allCases {
             XCTAssertEqual(m.purpose, expected[m], "\(m)")
             XCTAssertFalse(m.purpose.contains("\n"), "\(m): the note is one line")
-            XCTAssertNil(m.purpose.rangeOfCharacter(from: CharacterSet(charactersIn: "абвгдеёжзийклмнопрстуфхцчшщъыьэюя")),
+            XCTAssertNil(m.purpose.rangeOfCharacter(from: CharacterSet(charactersIn: Unicode.Scalar(0x0400)!...Unicode.Scalar(0x04FF)!)),
                          "\(m): notes are English")
         }
     }

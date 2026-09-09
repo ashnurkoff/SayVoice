@@ -38,6 +38,9 @@ final class OnboardingModel {
     var microphoneGranted = false
     var accessibilityGranted = false
     private var pollTask: Task<Void, Never>?
+    /// Onboarding ends once. The coordinator's callback closes the window and
+    /// starts the app, and a second call would start it twice.
+    private var finished = false
 
     init(permissions: PermissionSource, settings: SettingsStore, modelManager: ModelManager,
          downloads: ModelDownloads, onFinished: @escaping () -> Void) {
@@ -82,13 +85,28 @@ final class OnboardingModel {
         ModelManager.ModelSize(settingsString: settings.modelSize) ?? .recommended
     }
 
-    /// Whether the model the step offers is being fetched right now. The footer
-    /// reads it to disable Continue and to hide "Download later": leaving
-    /// mid-transfer would start the app without the model it is fetching, and
-    /// Cancel is the honest way out.
-    var isDownloadingTarget: Bool {
-        if case .running = downloads.state(for: downloadTarget) { return true }
-        return false
+    /// The model being fetched right now, whichever it is. Keyed off the whole
+    /// offered list rather than off `downloadTarget`: the target follows the
+    /// selection, and reading it there meant a selection change could unpin the
+    /// step while the transfer it started was still running.
+    var runningDownload: ModelManager.ModelSize? {
+        Self.offeredModels.first {
+            if case .running = downloads.state(for: $0) { return true }
+            return false
+        }
+    }
+
+    /// Whether a transfer is under way. The footer reads it to disable Continue
+    /// and to hide "Download later": leaving mid-transfer would start the app
+    /// without the model it is fetching, and Cancel is the honest way out.
+    var isDownloadingTarget: Bool { runningDownload != nil }
+
+    /// Picking a model. Ignored while a transfer runs — the download belongs to
+    /// the row that started it, and a selection moved out from under it would
+    /// leave the app pointing at a model nobody is fetching.
+    func select(_ size: ModelManager.ModelSize) {
+        guard !isDownloadingTarget else { return }
+        settings.modelSize = size.settingsString
     }
 
     func next() {
@@ -105,6 +123,8 @@ final class OnboardingModel {
         if let following = OnboardingStep(rawValue: step.rawValue + 1) {
             step = following
         } else {
+            guard !finished else { return }
+            finished = true
             stopPolling()
             onFinished()
         }

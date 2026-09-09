@@ -49,6 +49,30 @@ final class ComponentRenderTests: XCTestCase {
         }
     }
 
+    /// The done mark draws itself in: 0.6 → 1 and transparent → opaque, driven
+    /// by the orb's `drawnIn` flag. No other state has an entrance, and Reduce
+    /// Motion removes it — the mark is then simply there.
+    func testOnlyTheDoneMarkDrawsItselfIn() {
+        for state in [Orb.State.idle, .recording, .transcribing, .error] {
+            XCTAssertFalse(Orb.isDrawingIn(state: state, drawnIn: false, reduceMotion: false), "\(state)")
+            XCTAssertEqual(Orb.drawInScale(state: state, drawnIn: false, reduceMotion: false), 1, "\(state)")
+            XCTAssertEqual(Orb.drawInOpacity(state: state, drawnIn: false, reduceMotion: false), 1, "\(state)")
+        }
+
+        XCTAssertTrue(Orb.isDrawingIn(state: .done, drawnIn: false, reduceMotion: false))
+        XCTAssertEqual(Orb.drawInScale(state: .done, drawnIn: false, reduceMotion: false), 0.6)
+        XCTAssertEqual(Orb.drawInOpacity(state: .done, drawnIn: false, reduceMotion: false), 0)
+
+        // Once it has drawn in, it is at rest like everything else.
+        XCTAssertEqual(Orb.drawInScale(state: .done, drawnIn: true, reduceMotion: false), 1)
+        XCTAssertEqual(Orb.drawInOpacity(state: .done, drawnIn: true, reduceMotion: false), 1)
+
+        // Reduce Motion: no entrance at all, whatever the flag says.
+        XCTAssertFalse(Orb.isDrawingIn(state: .done, drawnIn: false, reduceMotion: true))
+        XCTAssertEqual(Orb.drawInScale(state: .done, drawnIn: false, reduceMotion: true), 1)
+        XCTAssertEqual(Orb.drawInOpacity(state: .done, drawnIn: false, reduceMotion: true), 1)
+    }
+
     func testGlassPanelRendersBothShapes() {
         for shape in [GlassPanel<Text>.Shape.capsule, .card] {
             let s = renderSize(GlassPanel(shape: shape) { Text("Listening") })

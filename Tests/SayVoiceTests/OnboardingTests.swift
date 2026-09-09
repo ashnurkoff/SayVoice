@@ -78,15 +78,42 @@ final class OnboardingTests: XCTestCase {
         await settle(until: { box.continuation != nil })
 
         XCTAssertTrue(model.isDownloadingTarget)
+        XCTAssertEqual(model.runningDownload, .recommended, "the transfer is the recommended model's")
         XCTAssertFalse(model.canContinue, "Continue is disabled during a transfer")
         XCTAssertFalse(model.canSkip, "\"Download later\" is gone during a transfer")
         model.next(); model.skip()
         XCTAssertEqual(model.step, .model, "neither button may leave the step mid-download")
 
+        // Nor may the rows: selecting another model would move the target out
+        // from under the transfer that is already running.
+        let selected = model.settings.modelSize
+        model.select(.small)
+        XCTAssertEqual(model.settings.modelSize, selected, "the selection is pinned too")
+        XCTAssertEqual(model.downloadTarget, .recommended)
+        XCTAssertFalse(model.canContinue, "still pinned after the attempt")
+        if case .running? = model.downloads.state(for: .recommended) {} else {
+            XCTFail("Cancel must still be on offer — the transfer is still running")
+        }
+
         model.downloads.cancel(model.downloadTarget)
         XCTAssertFalse(model.isDownloadingTarget, "cancelling releases the step")
         XCTAssertTrue(model.canSkip)
+        model.select(.small)
+        XCTAssertEqual(model.settings.modelSize, ModelManager.ModelSize.small.settingsString,
+                       "and the rows are choices again")
         box.continuation?.finish()
+    }
+
+    /// The callback closes the window and starts the app. A second Start —
+    /// a double click, or a keyboard activation racing the mouse — must not
+    /// start it twice.
+    func testFinishingOnboardingFiresTheCallbackExactlyOnce() {
+        var calls = 0
+        let (m, _) = makeModel(mic: true, ax: true) { calls += 1 }
+        m.step = .done
+        m.next(); m.next(); m.skip()
+        XCTAssertEqual(calls, 1)
+        XCTAssertEqual(m.step, .done, "and the step machine stays where it is")
     }
 
     func testOnboardingRendersEveryStepInBothThemesAtWindowSize() {

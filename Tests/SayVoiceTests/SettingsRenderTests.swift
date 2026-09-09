@@ -57,15 +57,101 @@ final class SettingsRenderTests: XCTestCase {
         }
     }
 
-    /// Item 8 of the owner's first round: Language is one row and the setting
-    /// changed most often, so it sits above the five model rows and is visible
-    /// without scrolling; and Recognition is the one section whose content runs
-    /// to the window's bottom edge instead of stopping short of it.
-    func testRecognitionPutsLanguageFirstAndReachesTheBottomEdge() {
+    /// Item 8 of the owner's first round, measured on the rendered window
+    /// rather than asserted about the source: the first card under the header
+    /// is the short one (Language, not the five model rows), it ends well above
+    /// the fold, and its trailing edge lines up with the header pill's — the
+    /// scroll area gave up only its bottom margin, not its right one.
+    func testRecognitionLeadsWithLanguageAndKeepsTheHeaderMargins() throws {
         XCTAssertEqual(RecognitionSection.cardOrder, [.language, .model])
         XCTAssertTrue(SettingsSection.recognition.scrollsToBottomEdge)
         for section in SettingsSection.allCases where section != .recognition {
             XCTAssertFalse(section.scrollsToBottomEdge, "\(section) does not scroll")
+        }
+
+        for dark in [true, false] {
+            let probe = try WindowProbe(view: makeView(section: .recognition), dark: dark)
+
+            // Trailing edges: the pill's band, then the first card's band.
+            let pillEdge = probe.rightMostSurface(rows: 40...90)
+            // A column of bare card fill: past the card's own border, short of
+            // the 16 pt its content is inset by.
+            let fill: CGFloat = 100
+            let cardTop = try XCTUnwrap(probe.firstSurfaceRow(inColumn: fill, below: 90), "no card under the header")
+            let cardBottom = try XCTUnwrap(probe.firstGroundRow(inColumn: fill, below: cardTop + 4), "the first card never ends")
+            let cardEdge = probe.rightMostSurface(rows: Int(cardTop + 8)...Int(cardBottom - 8))
+            // 2 pt, not 1: the pill is a capsule, and the antialiased pixel at
+            // the tangent of its curve fails a strict fill match, so its edge
+            // measures about a point inside a card's straight one. The
+            // card-against-card check below is the exact one.
+            XCTAssertEqual(cardEdge, pillEdge, accuracy: 2,
+                           "the card's trailing edge (\(cardEdge)) must match the header pill's (\(pillEdge)), dark=\(dark)")
+
+            // …and General, which never lost its margin, agrees with both.
+            let general = try WindowProbe(view: makeView(section: .general), dark: dark)
+            XCTAssertEqual(cardEdge, general.rightMostSurface(rows: 140...200), accuracy: 1,
+                           "Recognition's cards must line up with every other section's, dark=\(dark)")
+
+            // The first card is the one-row Language card, not the model list…
+            XCTAssertLessThan(cardBottom - cardTop, 200,
+                              "the first card is \(cardBottom - cardTop) pt tall — that is the model list, not Language")
+            // …and it is fully visible under the header, without scrolling.
+            XCTAssertLessThan(cardBottom, SettingsView.windowSize.height - cardTop,
+                              "Language ends at \(cardBottom), below the fold, dark=\(dark)")
+        }
+    }
+
+    /// A rendered settings window, with the few pixel questions the layout
+    /// tests ask of it. Points, not pixels: every value is divided back down by
+    /// the backing scale.
+    private struct WindowProbe {
+        let rep: NSBitmapImageRep
+        let surface: NSColor
+        let scale: CGFloat
+
+        @MainActor
+        init(view: SettingsView, dark: Bool) throws {
+            let appearance = try XCTUnwrap(NSAppearance(named: dark ? .darkAqua : .aqua))
+            let host = NSHostingView(rootView: view)
+            host.appearance = appearance
+            host.frame = CGRect(origin: .zero, size: SettingsView.windowSize)
+            host.layoutSubtreeIfNeeded()
+            rep = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: rep)
+            surface = try XCTUnwrap(DS.Colors.surface.resolved(for: appearance).usingColorSpace(.sRGB))
+            scale = CGFloat(rep.pixelsWide) / SettingsView.windowSize.width
+        }
+
+        /// The fill a card and the status pill share. Matched rather than
+        /// "anything that is not the ground" because on light the card's drop
+        /// shadow tints the ground for two points past the border, and that
+        /// shadow is not the edge anyone is aligning to.
+        func isSurface(x: CGFloat, y: CGFloat) -> Bool {
+            guard let c = rep.colorAt(x: Int(x * scale), y: Int(y * scale))?.usingColorSpace(.sRGB) else { return false }
+            return abs(c.redComponent - surface.redComponent) < 0.012
+                && abs(c.greenComponent - surface.greenComponent) < 0.012
+                && abs(c.blueComponent - surface.blueComponent) < 0.012
+        }
+
+        /// Right-most column of card fill over a band of rows — the trailing
+        /// edge of whatever the band crosses, one point inside its border.
+        func rightMostSurface(rows: ClosedRange<Int>) -> CGFloat {
+            var best: CGFloat = 0
+            for y in rows {
+                for px in stride(from: rep.pixelsWide - 1, through: 0, by: -1) {
+                    let x = CGFloat(px) / scale
+                    if isSurface(x: x, y: CGFloat(y)) { best = max(best, x); break }
+                }
+            }
+            return best
+        }
+
+        func firstSurfaceRow(inColumn x: CGFloat, below y: CGFloat) -> CGFloat? {
+            (Int(y)..<Int(SettingsView.windowSize.height)).first { isSurface(x: x, y: CGFloat($0)) }.map(CGFloat.init)
+        }
+
+        func firstGroundRow(inColumn x: CGFloat, below y: CGFloat) -> CGFloat? {
+            (Int(y)..<Int(SettingsView.windowSize.height)).first { !isSurface(x: x, y: CGFloat($0)) }.map(CGFloat.init)
         }
     }
 

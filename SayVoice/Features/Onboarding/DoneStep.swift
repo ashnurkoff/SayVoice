@@ -12,12 +12,12 @@ struct DoneStep: View {
     }
 
     var body: some View {
-        StepLayout(title: "You're all set", subtitle: message) {
+        StepLayout(title: "You're all set", subtitle: message, centersContent: true) {
             HStack {
                 Spacer(minLength: 0)
-                // The orb already springs into the done state on appearance;
-                // no separate animation is needed here.
-                Orb(state: .done, size: 56)
+                // The one moment the app celebrates anything: the mark draws
+                // itself in, and at 72 pt it is the thing the eye lands on.
+                Orb(state: .done, size: 72)
                 Spacer(minLength: 0)
             }
             .padding(.top, DS.Space.s20)
