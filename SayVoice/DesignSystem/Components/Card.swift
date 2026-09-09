@@ -29,6 +29,6 @@ struct Card<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous).fill(DS.Colors.surface.color))
         .overlay(RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous).strokeBorder(DS.Colors.line.color, lineWidth: 1))
-        .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: 1)
+        .shadow(color: DS.Colors.cardShadow.color, radius: 2, x: 0, y: 1)
     }
 }

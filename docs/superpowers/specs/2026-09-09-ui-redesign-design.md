@@ -47,10 +47,11 @@ Every role has a dark and a light value. Components never use literals — only 
 | `rec` | `#F5636F` | `#E8465A` | Recording state |
 | `ok` | `#3ECF8E` | `#22A86B` | Success, "downloaded" |
 | `warn` | `#E0A34A` | `#C4842A` | Warnings, recoverable errors |
-| `glassFill` | surface 62% | white 62% | Overlay body |
+| `glassFill` | surface 62% | white 62% | Overlay body fallback (the live overlay uses `glassEffect`, which supplies its own material) |
 | `glassLine` | accent 28% | accent 30% | Overlay border |
 | `glassHighlight` | white 22% | white 95% | 1px inner top highlight on glass |
 | `glassShadow` | #281E78 35% | black 18% | Overlay drop shadow |
+| `cardShadow` | black 12% | black 12% | Card drop shadow |
 | `recHighlight` | `#FF8A8A` | `#FF8A8A` | Orb gradient highlight (recording) |
 | `okHighlight` | `#8CEDB8` | `#8CEDB8` | Orb gradient highlight (done) |
 | `warnHighlight` | `#F7C773` | `#F7C773` | Orb gradient highlight (error) |
@@ -128,7 +129,7 @@ Rule of boundaries: a component knows nothing about `SettingsStore`, `ModelManag
 - **Panel** stays 640 × 280 with the existing positioning and focus-avoidance logic (`OverlayWindowController`), unchanged.
 - **Geometry:** a `GlassPanel(.capsule)` of fixed width 420 for `recording` and `transcribing`. `result` and `error` expand the same 420-wide panel downward into `GlassPanel(.card)`. Width never changes between states; only height does, animated.
 - **Recording (hold mode):** `Orb(.recording)` · label "Listening" with sub-label "release ⌥ to finish" (hotkey name from settings) · `Waveform` · `value` timer.
-- **Recording (toggle mode):** same, sub-label "press ⌃⌥⌘D again to finish", and a "Stop" `.secondary` button inside the capsule on the right. The panel accepts mouse events only in this state (existing behaviour).
+- **Recording (toggle mode):** same, sub-label "press ⌃⌥⌘D again to finish", and a "Stop" `.secondary` button inside the capsule on the right. The panel accepts mouse events in the states that have controls or hover behaviour — toggle-mode recording, result, and error with an action — and is mouse-transparent otherwise.
 - **Transcribing:** `Orb(.transcribing)` · "Transcribing…" · waveform replaced by a thin indeterminate bar of the same width so the layout does not jump.
 - **Result:** `Orb(.done)` · text up to 4 lines in `bodyLarge` · action row: "Copy", "Show all" (opens the history popover), duration in `valueSmall`. Auto-dismiss 2 s unless hovered.
 - **Error:** `Orb(.error)` · message · optional action ("Open Settings" for the accessibility case).

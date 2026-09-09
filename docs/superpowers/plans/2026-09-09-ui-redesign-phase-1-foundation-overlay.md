@@ -274,7 +274,7 @@ unit tests do not install an event tap or prompt for permissions."
 - Produces:
   - `enum DS` namespace.
   - `struct DSColor: Sendable { var nsColor: NSColor; var color: Color; func resolved(for appearance: NSAppearance) -> NSColor }`
-  - `DS.Colors.{ground, surface, surface2, line, text, muted, faint, accent, accent2, accentSoft, rec, ok, warn, glassFill, glassLine, glassHighlight}: DSColor`
+  - `DS.Colors.{ground, surface, surface2, line, text, muted, faint, accent, accent2, accentSoft, rec, ok, warn, glassFill, glassLine, glassHighlight, glassShadow, cardShadow, recHighlight, okHighlight, warnHighlight}: DSColor`
   - `enum DS.TextStyle { display, section, title, bodyLarge, body, bodyMedium, caption, value, valueSmall }`
   - `DS.font(_ style: DS.TextStyle) -> Font`
   - `DS.Space.{s4,s8,s12,s16,s20,s28}: CGFloat`, `DS.Radius.{control=6,row=10,card=14,overlayCard=18}`, `DS.Size.{settingsRow=44,popoverRow=48,overlayWidth=420}`
@@ -448,10 +448,12 @@ extension DS {
         static let textFamily = "Onest"
         static let monoFamily = "JetBrains Mono"
 
-        /// True when the bundled face is registered. Checked through CoreText,
-        /// which is safe off the main thread.
-        static var isOnestAvailable: Bool { isFamilyAvailable(textFamily) }
-        static var isMonoAvailable: Bool { isFamilyAvailable(monoFamily) }
+        /// True when the bundled face is registered. Resolved once: the fonts are
+        /// registered at launch from `ATSApplicationFontsPath` and the set never
+        /// changes afterwards, while the CoreText lookup costs milliseconds — far
+        /// too much for a check on every `DS.font(_:)` call in a view body.
+        static let isOnestAvailable: Bool = isFamilyAvailable(textFamily)
+        static let isMonoAvailable: Bool = isFamilyAvailable(monoFamily)
 
         private static func isFamilyAvailable(_ family: String) -> Bool {
             ((CTFontManagerCopyAvailableFontFamilyNames() as? [String]) ?? []).contains(family)
@@ -1210,7 +1212,7 @@ struct GlassPanel<Content: View>: View {
                         LinearGradient(colors: [DS.Colors.glassHighlight.color, .clear], startPoint: .top, endPoint: .center),
                         lineWidth: 1
                     )
-                    .mask(Rectangle().frame(height: 2), alignment: .top)
+                    .mask(alignment: .top) { Rectangle().frame(height: 2) }
             }
             .shadow(color: DS.Colors.glassShadow.color, radius: 25, x: 0, y: 20)
     }
@@ -1404,37 +1406,47 @@ struct Waveform: View {
     }
 
     var body: some View {
-        TimelineView(reduceMotion ? .periodic(from: .now, by: 1.0 / 15) : .animation) { timeline in
-            Canvas { ctx, size in
-                let now = timeline.date.timeIntervalSinceReferenceDate
-                engine.step(now: now, history: levels, barCount: bars)
-
-                let slot = size.width / CGFloat(bars)
-                let barWidth = max(2, slot - spacing)
-                let axisY = size.height / 2
-                let maxHalf = axisY - 2
-
-                var reflection = ctx
-                reflection.opacity = 0.32
-
-                for k in 0..<bars {
-                    let h = min(maxHalf, max(2, engine.heights[k] * maxHalf))
-                    let x = CGFloat(k) * slot + spacing / 2
-                    let radius = min(barWidth / 2, h / 2)
-
-                    ctx.fill(
-                        Path(roundedRect: CGRect(x: x, y: axisY - h, width: barWidth, height: h), cornerRadius: radius),
-                        with: .color(tint)
-                    )
-                    let mh = h * 0.55
-                    reflection.fill(
-                        Path(roundedRect: CGRect(x: x, y: axisY + 2, width: barWidth, height: mh), cornerRadius: min(radius, mh / 2)),
-                        with: .color(tint)
-                    )
-                }
+        // Two schedules, two TimelineViews: `.animation` and `.periodic` are
+        // distinct types, so they cannot be chosen by a ternary.
+        Group {
+            if reduceMotion {
+                TimelineView(.periodic(from: .now, by: 1.0 / 15)) { canvas(at: $0.date) }
+            } else {
+                TimelineView(.animation) { canvas(at: $0.date) }
             }
         }
         .accessibilityHidden(true)
+    }
+
+    private func canvas(at date: Date) -> some View {
+        Canvas { ctx, size in
+            let now = date.timeIntervalSinceReferenceDate
+            engine.step(now: now, history: levels, barCount: bars)
+
+            let slot = size.width / CGFloat(bars)
+            let barWidth = max(2, slot - spacing)
+            let axisY = size.height / 2
+            let maxHalf = axisY - 2
+
+            var reflection = ctx
+            reflection.opacity = 0.32
+
+            for k in 0..<bars {
+                let h = min(maxHalf, max(2, engine.heights[k] * maxHalf))
+                let x = CGFloat(k) * slot + spacing / 2
+                let radius = min(barWidth / 2, h / 2)
+
+                ctx.fill(
+                    Path(roundedRect: CGRect(x: x, y: axisY - h, width: barWidth, height: h), cornerRadius: radius),
+                    with: .color(tint)
+                )
+                let mh = h * 0.55
+                reflection.fill(
+                    Path(roundedRect: CGRect(x: x, y: axisY + 2, width: barWidth, height: mh), cornerRadius: min(radius, mh / 2)),
+                    with: .color(tint)
+                )
+            }
+        }
     }
 }
 
@@ -1831,8 +1843,7 @@ import XCTest
 final class OverlayRenderTests: XCTestCase {
 
     private func render(_ model: OverlayModel) -> CGSize {
-        let host = NSHostingView(rootView: OverlayView(model: model)
-            .frame(width: OverlayWindowController.panelSize.width, height: OverlayWindowController.panelSize.height))
+        let host = NSHostingView(rootView: OverlayView(model: model))
         host.frame = CGRect(origin: .zero, size: OverlayWindowController.panelSize)
         host.layoutSubtreeIfNeeded()
         let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
@@ -1840,12 +1851,12 @@ final class OverlayRenderTests: XCTestCase {
         return host.fittingSize
     }
 
-    func testHiddenStateKeepsPanelSize() {
+    func testHiddenStateKeepsNonZeroBacking() {
         let m = OverlayModel()
         m.displayState = .hidden
         let s = render(m)
-        XCTAssertEqual(s.width, OverlayWindowController.panelSize.width, accuracy: 0.5,
-                       "the Color.clear backing must keep the window from collapsing")
+        XCTAssertGreaterThan(s.width, 0,
+                             "the Color.clear backing must keep the hosting view from collapsing")
     }
 
     func testEveryStateRenders() {

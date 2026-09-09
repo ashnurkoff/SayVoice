@@ -81,6 +81,9 @@ extension DS {
         static let glassHighlight = DSColor(dark: 0xFFFFFF, light: 0xFFFFFF, darkAlpha: 0.22, lightAlpha: 0.95)
         // Overlay drop shadow: indigo-tinted on dark, plain on light
         static let glassShadow    = DSColor(dark: 0x281E78, light: 0x000000, darkAlpha: 0.35, lightAlpha: 0.18)
+        /// Settings card drop shadow — much shallower than the overlay's, and
+        /// neutral in both appearances.
+        static let cardShadow     = DSColor(dark: 0x000000, light: 0x000000, darkAlpha: 0.12, lightAlpha: 0.12)
 
         // Orb gradient highlights — the lit top of the sphere for each
         // semantic state. Same value in both appearances: the orb is a light
