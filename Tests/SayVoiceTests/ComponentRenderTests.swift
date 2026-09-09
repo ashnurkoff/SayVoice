@@ -92,15 +92,39 @@ final class ComponentRenderTests: XCTestCase {
         ]
         for (selected, downloaded, highlighted, download) in variants {
             for dark in [true, false] {
-                let s = renderSize(
-                    ModelRow(name: "Large Turbo Q5", badge: "recommended", badgeIsAccent: true, qualitySteps: 4, sizeText: "574 MB",
-                             isSelected: selected, isDownloaded: downloaded, isHighlighted: highlighted, download: download,
-                             onSelect: {}, onDownload: {}, onCancel: {}, onRetry: {}),
-                    width: 640, dark: dark)
+                let s = renderSize(modelRow(selected: selected, downloaded: downloaded, highlighted: highlighted, download: download),
+                                   width: 640, dark: dark)
                 XCTAssertEqual(s.width, 640, accuracy: 0.5)
-                XCTAssertGreaterThan(s.height, download == nil ? 36 : 60)
+                // One line without a download, two with it — compared against the
+                // other variant rather than against a magic number, and bounded
+                // on both sides so a runaway second line also fails.
+                let oneLine = renderSize(modelRow(selected: selected, downloaded: downloaded, highlighted: highlighted, download: nil),
+                                         width: 640, dark: dark)
+                XCTAssertGreaterThan(oneLine.height, DS.Size.settingsRow / 2)
+                XCTAssertLessThan(oneLine.height, DS.Size.settingsRow)
+                if download == nil {
+                    XCTAssertEqual(s.height, oneLine.height, accuracy: 0.5)
+                } else {
+                    XCTAssertGreaterThan(s.height, oneLine.height, "the download line adds no height")
+                    XCTAssertLessThan(s.height, oneLine.height + 80, "the download line is unexpectedly tall")
+                }
             }
         }
+    }
+
+    /// A long name must not push the size chip off the row: it is clamped to
+    /// one line and truncated instead.
+    func testModelRowKeepsALongNameOnOneLine() {
+        let short = renderSize(modelRow(selected: false, downloaded: false, highlighted: false, download: nil), width: 640)
+        let long = renderSize(modelRow(name: String(repeating: "Large Turbo Q5 ", count: 8),
+                                       selected: false, downloaded: false, highlighted: false, download: nil), width: 640)
+        XCTAssertEqual(long.height, short.height, accuracy: 0.5)
+    }
+
+    private func modelRow(name: String = "Large Turbo Q5", selected: Bool, downloaded: Bool, highlighted: Bool, download: DownloadState?) -> ModelRow {
+        ModelRow(name: name, badge: "recommended", badgeIsAccent: true, qualitySteps: 4, sizeText: "574 MB",
+                 isSelected: selected, isDownloaded: downloaded, isHighlighted: highlighted, download: download,
+                 onSelect: {}, onDownload: {}, onCancel: {}, onRetry: {})
     }
 
     func testTagFieldRendersWithChips() {

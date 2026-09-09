@@ -71,13 +71,16 @@ struct DownloadProgress: View {
     /// Pure formatting, so it stays off the main actor and can be called
     /// from anywhere.
     nonisolated static func statusText(fraction: Double, bytesPerSecond: Double?, secondsLeft: Double?) -> String {
-        let percent = Int((min(1, max(0, fraction)) * 100).rounded(.down))
+        // The epsilon keeps 0.29 from printing as "28%": the product is
+        // 28.999… in binary, and flooring alone loses the point.
+        let percent = Int((min(1, max(0, fraction)) * 100 + 1e-9).rounded(.down))
         var parts = ["\(percent)%"]
         if let bytesPerSecond, bytesPerSecond > 0 {
             parts.append(String(format: "%.1f MB/s", bytesPerSecond / 1_000_000))
         }
         if let secondsLeft, secondsLeft.isFinite, secondsLeft >= 0 {
-            parts.append(Self.etaText(secondsLeft))
+            let eta = Self.etaText(secondsLeft)
+            if !eta.isEmpty { parts.append(eta) }
         }
         return parts.joined(separator: " · ")
     }
@@ -85,11 +88,16 @@ struct DownloadProgress: View {
     /// Minutes and hours are rounded, not truncated: 4000 s reads as
     /// "1 h 7 min left", which is what a user comparing the bar against a
     /// clock expects.
+    /// An empty string when the estimate is absurd — a stalled transfer can
+    /// produce billions of seconds, and converting that to `Int` traps.
     nonisolated private static func etaText(_ seconds: Double) -> String {
+        guard seconds < 1e9 else { return "" }
         let s = Int(seconds.rounded())
         if s < 60 { return "\(s) s left" }
         let minutes = Int((Double(s) / 60).rounded())
         if minutes < 60 { return "\(minutes) min left" }
+        // "1 h 0 min left" is worse than "1 h left" in every way.
+        if minutes % 60 == 0 { return "\(minutes / 60) h left" }
         return "\(minutes / 60) h \(minutes % 60) min left"
     }
 }

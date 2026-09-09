@@ -42,6 +42,9 @@ struct ModelRow: View {
                     Text(name)
                         .font(DS.font(isSelected ? .bodyMedium : .body))
                         .foregroundStyle(DS.Colors.text.color)
+                        // One line: a long name truncates rather than pushing
+                        // the size chip out of the row.
+                        .lineLimit(1)
                     if let badge {
                         Chip(badge, style: badgeIsAccent ? .accent : .neutral)
                     }
@@ -98,6 +101,8 @@ struct ModelRow: View {
                     .frame(width: 14, height: 4)
             }
         }
-        .accessibilityLabel("Quality \(qualitySteps) of 5")
+        // Clamped: the label must stay truthful even if a catalogue entry ever
+        // carries a step outside the scale.
+        .accessibilityLabel("Quality \(min(5, max(1, qualitySteps))) of 5")
     }
 }
