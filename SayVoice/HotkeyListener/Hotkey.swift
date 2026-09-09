@@ -54,14 +54,14 @@ struct Hotkey: Equatable, Sendable {
 
     /// Коды клавиш-модификаторов и маски, которые они поднимают.
     static let modifierKeys: [CGKeyCode: (mask: CGEventFlags, name: String)] = [
-        61: (.maskAlternate,   "Правый ⌥"),
-        58: (.maskAlternate,   "Левый ⌥"),
-        54: (.maskCommand,     "Правый ⌘"),
-        55: (.maskCommand,     "Левый ⌘"),
-        62: (.maskControl,     "Правый ⌃"),
-        59: (.maskControl,     "Левый ⌃"),
-        60: (.maskShift,       "Правый ⇧"),
-        56: (.maskShift,       "Левый ⇧"),
+        61: (.maskAlternate,   "Right ⌥"),
+        58: (.maskAlternate,   "Left ⌥"),
+        54: (.maskCommand,     "Right ⌘"),
+        55: (.maskCommand,     "Left ⌘"),
+        62: (.maskControl,     "Right ⌃"),
+        59: (.maskControl,     "Left ⌃"),
+        60: (.maskShift,       "Right ⇧"),
+        56: (.maskShift,       "Left ⇧"),
         63: (.maskSecondaryFn, "Fn"),
     ]
 
@@ -78,10 +78,10 @@ struct Hotkey: Equatable, Sendable {
     /// Подписи кнопок мыши. Номера — как в CGEvent.
     static func mouseButtonName(_ button: Int) -> String {
         switch button {
-        case 2:  return "Средняя кнопка мыши"
-        case 3:  return "Кнопка мыши «Назад»"
-        case 4:  return "Кнопка мыши «Вперёд»"
-        default: return "Кнопка мыши \(button + 1)"
+        case 2:  return "Middle mouse button"
+        case 3:  return "Back mouse button"
+        case 4:  return "Forward mouse button"
+        default: return "Mouse button \(button + 1)"
         }
     }
 
@@ -109,7 +109,7 @@ struct Hotkey: Equatable, Sendable {
 
     /// Клавиши без печатного символа — у них имя фиксированное.
     private static let specialKeyNames: [CGKeyCode: String] = [
-        36: "↩︎ Return", 48: "⇥ Tab", 49: "Пробел", 51: "⌫ Delete", 53: "⎋ Esc",
+        36: "↩︎ Return", 48: "⇥ Tab", 49: "Space", 51: "⌫ Delete", 53: "⎋ Esc",
         76: "⌤ Enter", 117: "⌦ Fwd Delete",
         123: "←", 124: "→", 125: "↓", 126: "↑",
         115: "Home", 119: "End", 116: "Page Up", 121: "Page Down",
@@ -128,7 +128,7 @@ struct Hotkey: Equatable, Sendable {
     static func keyName(_ keyCode: CGKeyCode) -> String {
         if let special = specialKeyNames[keyCode] { return special }
         if let char = printableCharacter(for: keyCode) { return char.uppercased() }
-        return "Клавиша \(keyCode)"
+        return "Key \(keyCode)"
     }
 
     private static func printableCharacter(for keyCode: CGKeyCode) -> String? {
@@ -167,7 +167,7 @@ struct Hotkey: Equatable, Sendable {
         var message: String {
             switch self {
             case .needsModifier:
-                return "К обычной клавише добавь модификатор — иначе она перестанет печататься во всех приложениях, пока SayVoice запущен."
+                return "Add a modifier to a regular key — otherwise it stops typing in every app while SayVoice is running."
             case .notUsable(let reason):
                 return reason
             }
@@ -179,7 +179,7 @@ struct Hotkey: Equatable, Sendable {
         // Левая и правая кнопки — основа работы с системой; их перехват сделал бы
         // мышь бесполезной, пока приложение запущено.
         if mouseButton <= 1 {
-            return .notUsable("Левую и правую кнопки мыши назначить нельзя — без них не выйдет ни кликнуть, ни вызвать контекстное меню.")
+            return .notUsable("The left and right mouse buttons can't be assigned — without them you can't click or open context menus.")
         }
         return nil
     }
@@ -187,7 +187,7 @@ struct Hotkey: Equatable, Sendable {
     /// Проверяет, годится ли нажатая комбинация как хоткей записи.
     static func validate(keyCode: CGKeyCode, flags: UInt64) -> Rejection? {
         if keyCode == 57 {
-            return .notUsable("Caps Lock не даёт пары «нажатие — отпускание», удержание с ним не работает.")
+            return .notUsable("Caps Lock has no press/release pair, so holding it cannot work.")
         }
         // Модификатор-одиночка допустим всегда.
         if modifierKeys[keyCode] != nil { return nil }
@@ -208,16 +208,16 @@ struct Hotkey: Equatable, Sendable {
     var warning: String? {
         if let button = mouseButton {
             if button == 2 {
-                return "Средняя кнопка у многих открывает ссылки в новой вкладке."
+                return "The middle button opens links in new tabs in many apps."
             }
-            return "Если кнопке назначено действие в Logi Options+ или похожей утилите, система её не увидит — переведите кнопку в состояние по умолчанию."
+            return "If Logi Options+ or a similar utility owns this button, the system never sees it — set the button to its default action."
         }
         switch keyCode {
-        case 63:  return "Fn занята системной диктовкой macOS."
-        case 54:  return "Правый ⌘ у многих переключает раскладку клавиатуры."
-        case 56, 60: return "Удержание ⇧ ломает набор заглавных."
-        case 58:  return "Левый ⌥ используется для ввода спецсимволов."
-        case 55:  return "Левый ⌘ участвует почти во всех сочетаниях — удерживать неудобно."
+        case 63:  return "Fn is used by macOS dictation."
+        case 54:  return "Right ⌘ switches the keyboard layout for many users."
+        case 56, 60: return "Holding ⇧ breaks typing capitals."
+        case 58:  return "Left ⌥ is used for special characters."
+        case 55:  return "Left ⌘ is part of almost every shortcut — awkward to hold."
         default:  return nil
         }
     }

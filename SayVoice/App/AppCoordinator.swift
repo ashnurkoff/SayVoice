@@ -475,11 +475,11 @@ final class AppCoordinator {
 
     private func errorMessage(_ error: AppError) -> String {
         switch error {
-        case .microphonePermissionDenied:    return "Нет доступа к микрофону"
-        case .accessibilityPermissionDenied: return "Включите SayVoice в Accessibility"
-        case .modelNotLoaded:                return "Модель не загружена"
-        case .transcriptionFailed:           return "Не услышал ничего"
-        case .injectionFailed:               return "Не удалось вставить текст"
+        case .microphonePermissionDenied:    return "No microphone access"
+        case .accessibilityPermissionDenied: return "Enable SayVoice in Accessibility"
+        case .modelNotLoaded:                return "Model not loaded"
+        case .transcriptionFailed:           return "Didn't catch anything"
+        case .injectionFailed:               return "Couldn't insert text"
         case .recordingTooShort:             return ""
         }
     }
