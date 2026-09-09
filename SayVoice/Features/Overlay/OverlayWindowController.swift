@@ -108,7 +108,10 @@ final class OverlayWindowController: NSWindowController {
         guard delay > 0 else { animateDismiss(); return }
         dismissTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(delay))
-            while let self, self.model.isHovered, !Task.isCancelled {
+            // Bounded pause: a pointer left resting on the panel — or a hover
+            // state that never clears — must not keep it up forever.
+            let deadline = ContinuousClock.now + .seconds(10)
+            while let self, self.model.isHovered, !Task.isCancelled, ContinuousClock.now < deadline {
                 try? await Task.sleep(for: .milliseconds(250))
             }
             guard !Task.isCancelled else { return }

@@ -12,7 +12,11 @@ struct OverlayView: View {
             // view collapses in .hidden, the window shrinks around it, and the
             // next show is centred on the collapsed size. Color.clear draws
             // nothing and does not wake the render loop.
+            // Hit-testing off: the backing spans the whole 640x280 panel, and
+            // with mouse events enabled it would swallow clicks far outside
+            // the drawn glass. Only the panel itself should catch the pointer.
             Color.clear
+                .allowsHitTesting(false)
 
             if model.displayState != .hidden {
                 GlassPanel(shape: isCard ? .card : .capsule) {
