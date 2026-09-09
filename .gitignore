@@ -21,3 +21,6 @@ xcuserdata/
 
 # Конфиг локального превью — привязан к сессии, не для репозитория
 .claude/launch.json
+
+# Subagent-driven-development scratch (ledgers, briefs, reports)
+.superpowers/
