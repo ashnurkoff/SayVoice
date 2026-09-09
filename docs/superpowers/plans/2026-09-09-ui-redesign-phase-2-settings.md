@@ -121,27 +121,30 @@ final class ModelCatalogTests: XCTestCase {
 
     @MainActor
     func testDownloadStreamStopsWhenConsumerIsCancelled() async {
-        // An address that never answers: the stream must end with an error
-        // promptly after cancellation instead of hanging on the connection.
+        // A cancelled consumer must see the stream end promptly — as nil
+        // (AsyncThrowingStream ends on cancellation) or as an error — instead
+        // of hanging on the connection until the transfer finishes.
         let manager = ModelManager()
-        let task = Task {
+        let task = Task { () -> String in
             var count = 0
             do {
                 for try await _ in manager.downloadModelProgress(.base) { count += 1 }
+                return "ended after \(count) chunk(s)"
             } catch {
-                return "ended: \(type(of: error))"
+                return "ended with \(type(of: error))"
             }
-            return "completed after \(count)"
         }
         try? await Task.sleep(for: .milliseconds(150))
+        let cancelledAt = Date()
         task.cancel()
         let result = await task.value
-        XCTAssertTrue(result.hasPrefix("ended"), "expected the stream to end with an error after cancel, got \(result)")
+        let waited = Date().timeIntervalSince(cancelledAt)
+        XCTAssertLessThan(waited, 3, "stream kept running \(waited)s after cancel (\(result))")
     }
 }
 ```
 
-The last test hits the network for up to 150 ms; on an offline machine it ends with a URL error immediately — that is also a pass.
+The last test touches the network for ~150 ms; offline it ends with a URL error immediately — also a pass. The worker's `catch` removes the `.tmp` file after the consumer has already returned, so the test does not assert on the file.
 
 - [ ] **Step 2: Run tests to verify they fail** — `cannot find 'ModelDownloadProgress'`, `has no member 'qualitySteps'`.
 
