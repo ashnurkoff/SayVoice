@@ -50,9 +50,9 @@ struct Orb: View {
         let (top, base): (Color, Color)
         switch state {
         case .idle, .transcribing: (top, base) = (DS.Colors.accent2.color, DS.Colors.accent.color)
-        case .recording:           (top, base) = (Color(red: 1, green: 0.54, blue: 0.54), DS.Colors.rec.color)
-        case .done:                (top, base) = (Color(red: 0.55, green: 0.93, blue: 0.72), DS.Colors.ok.color)
-        case .error:               (top, base) = (Color(red: 0.97, green: 0.78, blue: 0.45), DS.Colors.warn.color)
+        case .recording:           (top, base) = (DS.Colors.recHighlight.color, DS.Colors.rec.color)
+        case .done:                (top, base) = (DS.Colors.okHighlight.color, DS.Colors.ok.color)
+        case .error:               (top, base) = (DS.Colors.warnHighlight.color, DS.Colors.warn.color)
         }
         return RadialGradient(colors: [top, base], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: size)
     }

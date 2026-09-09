@@ -81,5 +81,12 @@ extension DS {
         static let glassHighlight = DSColor(dark: 0xFFFFFF, light: 0xFFFFFF, darkAlpha: 0.22, lightAlpha: 0.95)
         // Overlay drop shadow: indigo-tinted on dark, plain on light
         static let glassShadow    = DSColor(dark: 0x281E78, light: 0x000000, darkAlpha: 0.35, lightAlpha: 0.18)
+
+        // Orb gradient highlights — the lit top of the sphere for each
+        // semantic state. Same value in both appearances: the orb is a light
+        // source, not a surface, so it does not flip with the background.
+        static let recHighlight  = DSColor(dark: 0xFF8A8A, light: 0xFF8A8A)
+        static let okHighlight   = DSColor(dark: 0x8CEDB8, light: 0x8CEDB8)
+        static let warnHighlight = DSColor(dark: 0xF7C773, light: 0xF7C773)
     }
 }
