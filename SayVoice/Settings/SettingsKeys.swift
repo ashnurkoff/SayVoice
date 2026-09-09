@@ -1,7 +1,7 @@
 import Foundation
 
-/// Ключи UserDefaults для настроек приложения.
-/// Prefix `sv_` гарантирует отсутствие конфликтов.
+/// UserDefaults keys for the application settings.
+/// The `sv_` prefix guarantees there are no collisions.
 enum SettingsKeys {
     static let hotkeyCode             = "sv_hotkey_code"
     static let hotkeyFlags            = "sv_hotkey_flags"

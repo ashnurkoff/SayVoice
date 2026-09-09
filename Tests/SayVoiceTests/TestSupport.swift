@@ -11,9 +11,8 @@ enum TestDefaults {
 
     /// A suite of its own, named after a fresh UUID, so nothing that ran before
     /// or runs in parallel can be seen through it and the user's own settings
-    /// are never touched. The domain is wiped on creation, so the store starts
-    /// from the documented defaults even in the impossible case of a name
-    /// colliding with something on disk.
+    /// are never touched. The domain is wiped on creation, so the store always
+    /// starts from the documented defaults.
     static func ephemeral() -> UserDefaults {
         let name = "SayVoiceTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!

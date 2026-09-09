@@ -7,12 +7,14 @@ actor AudioRecorder {
     private var audioConverter: AudioConverter?
     private var isCapturing = false
 
-    // pcmBuffer пишется из real-time аудио-потока (appendBufferSync) и читается из
-    // stopCapture. Раньше запись шла через `Task { await append(...) }` — асинхронно:
-    // последние буферы не успевали дозаписаться до чтения в stopCapture (терялся хвост
-    // записи — «обрезалось последнее предложение»), плюс порядок не был гарантирован.
-    // Теперь буфер под OSAllocatedUnfairLock: запись/чтение синхронны через withLock
-    // (async-safe для Swift 6) — хвост гарантированно попадает в результат.
+    // pcmBuffer is written from the real-time audio thread (appendBufferSync)
+    // and read in stopCapture. Writing used to go through
+    // `Task { await append(...) }` — asynchronously: the last buffers did not
+    // make it in before stopCapture read them (the tail of the recording was
+    // lost — "the last sentence got cut off"), and the order was not guaranteed
+    // either. The buffer now sits under an OSAllocatedUnfairLock: writes and
+    // reads are synchronous through withLock (async-safe for Swift 6), so the
+    // tail is guaranteed to reach the result.
     private let pcmBuffer = OSAllocatedUnfairLock<[Float]>(initialState: [])
 
     // MARK: - Public
@@ -39,8 +41,9 @@ actor AudioRecorder {
         let levelHandler = onLevel
 
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
-            // Real-time audio thread: конвертируем и пишем в буфер синхронно под
-            // unfair-локом (без async-хопа), чтобы не терять последние буферы.
+            // Real-time audio thread: convert and write into the buffer
+            // synchronously under the unfair lock (no async hop), so the last
+            // buffers are not lost.
             guard let self else { return }
             self.appendBufferSync(buffer, converter: converter, onLevel: levelHandler)
         }
@@ -56,9 +59,10 @@ actor AudioRecorder {
 
     func stopCapture() -> [Float] {
         guard isCapturing else { return [] }
-        // Сначала снимаем тап и останавливаем движок — новые колбэки больше не придут.
-        // Любой уже выполняющийся appendBufferSync держит unfair-лок, поэтому чтение
-        // ниже дождётся его завершения: хвост записи гарантированно попадёт в result.
+        // Remove the tap and stop the engine first — no new callbacks arrive
+        // after that. Any appendBufferSync already running holds the unfair
+        // lock, so the read below waits for it to finish: the tail of the
+        // recording is guaranteed to reach the result.
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
         isCapturing = false
@@ -80,8 +84,9 @@ actor AudioRecorder {
         guard let converted = try? converter.convert(buffer) else { return }
 
         if let onLevel {
-            // 4 суб-замера на буфер (~40 Гц вместо ~12): эквалайзер ловит
-            // транзиенты речи, а не усреднённый по 85 мс уровень.
+            // 4 sub-measurements per buffer (~40 Hz instead of ~12): the
+            // waveform catches the transients of speech rather than a level
+            // averaged over 85 ms.
             let chunkCount = 4
             let chunkSize = max(1, converted.count / chunkCount)
             var start = 0
@@ -92,8 +97,8 @@ actor AudioRecorder {
             }
         }
 
-        // Синхронная запись под локом — без async-хопа, иначе последние буферы
-        // теряются, если stopCapture успевает прочитать буфер раньше их дозаписи.
+        // A synchronous write under the lock — no async hop, or the last
+        // buffers are lost when stopCapture reads the buffer before they land.
         pcmBuffer.withLock { $0.append(contentsOf: converted) }
     }
 
@@ -103,7 +108,7 @@ actor AudioRecorder {
         let sumOfSquares = samples.reduce(Float(0)) { $0 + $1 * $1 }
         let rms = sqrt(sumOfSquares / Float(samples.count))
         // Map dB range to 0...1 (-46 dB → 0, -14 dB → 1):
-        // уже диапазон = контрастнее визуализация речи
+        // a narrower range makes the speech visualisation more contrasty
         let db = 20.0 * log10(max(rms, 0.00001))
         let normalized = (db + 46.0) / 32.0
         return max(0, min(1, normalized))

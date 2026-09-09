@@ -7,27 +7,28 @@ final class HotkeyListener {
     private var runLoopSource: CFRunLoopSource?
     private weak var coordinator: AppCoordinator?
 
-    /// Текущий хоткей. Поля ниже дублируют его для чтения из колбэка event tap'а
-    /// (колбэк вызывается не на MainActor).
+    /// The current hotkey. The fields below duplicate it so the event tap
+    /// callback can read them (the callback does not run on the MainActor).
     private(set) var hotkey: Hotkey = .default
 
-    /// Читается из колбэка для раннего фильтра.
-    /// Запись — только с MainActor; torn read этих значений не является проблемой.
+    /// Read from the callback for the early filter.
+    /// Written only from the MainActor; a torn read of these values is harmless.
     nonisolated(unsafe) fileprivate var keyCode: CGKeyCode = Hotkey.default.keyCode
     nonisolated(unsafe) fileprivate var requiredFlags: UInt64 = Hotkey.default.flags
     nonisolated(unsafe) fileprivate var isModifierOnly: Bool = true
-    /// Номер кнопки мыши или -1, если хоткей клавиатурный.
+    /// The mouse button number, or -1 when the hotkey is a keyboard one.
     nonisolated(unsafe) fileprivate var mouseButton: Int = -1
-    /// Режим переключателя: нажатие начинает запись, следующее — останавливает.
+    /// Toggle mode: a press starts the recording and the next one stops it.
     nonisolated(unsafe) fileprivate var isToggle: Bool = false
 
-    /// Наш хоткей сейчас зажат. Нужен, чтобы съедать отпускание и автоповтор только
-    /// у своего нажатия: без этого приложение съедало keyUp у любой «D», набранной
-    /// без модификаторов, и клавиша переставала печататься во всей системе.
+    /// Our hotkey is held right now. Needed so that the release and the
+    /// autorepeat are eaten only for our own press: without it the app ate the
+    /// keyUp of every "D" typed without modifiers, and the key stopped printing
+    /// system-wide.
     nonisolated(unsafe) fileprivate var hotkeyIsDown: Bool = false
 
-    /// Модификаторы, которые учитываются при сравнении. Остальные биты
-    /// (например, состояние NumLock) игнорируются.
+    /// The modifiers taken into account when comparing. The other bits (the
+    /// NumLock state, for one) are ignored.
     nonisolated fileprivate static let relevantFlags: UInt64 =
         CGEventFlags([.maskCommand, .maskAlternate, .maskControl, .maskShift, .maskSecondaryFn]).rawValue
 
@@ -35,13 +36,14 @@ final class HotkeyListener {
         self.coordinator = coordinator
     }
 
-    /// Сменить хоткей на лету. Если меняется вид хоткея (модификатор ↔ обычная клавиша),
-    /// tap пересоздаётся: у этих видов разные режимы работы.
-    /// Сменить режим срабатывания (удержание / переключатель).
+    /// Changes the trigger mode (hold / toggle).
     func apply(isToggle newValue: Bool) {
         isToggle = newValue
     }
 
+    /// Changes the hotkey on the fly. When the kind of hotkey changes
+    /// (modifier ↔ regular key) the tap is recreated: the two kinds run in
+    /// different modes.
     func apply(_ new: Hotkey) {
         let modeChanged = new.requiresConsuming != hotkey.requiresConsuming
         hotkey = new
@@ -70,8 +72,8 @@ final class HotkeyListener {
             throw HotkeyError.accessibilityNotGranted
         }
 
-        // Кнопки мыши, кроме левой и правой, приходят как otherMouseDown/Up
-        // с номером в поле mouseEventButtonNumber.
+        // Mouse buttons other than left and right arrive as
+        // otherMouseDown/Up with the number in mouseEventButtonNumber.
         let mask: CGEventMask =
             (1 << CGEventType.keyDown.rawValue) |
             (1 << CGEventType.keyUp.rawValue) |
@@ -81,16 +83,17 @@ final class HotkeyListener {
 
         let userInfo = Unmanaged.passUnretained(self).toOpaque()
 
-        // Режим зависит от вида хоткея.
+        // The mode depends on the kind of hotkey.
         //
-        // .listenOnly — только наблюдение: приложение не встаёт в синхронный путь
-        // доставки клавиатуры, поэтому нет задержки ввода и система не отключает tap
-        // по таймауту. Этого достаточно для модификатора-одиночки, который сам по себе
-        // ничего не печатает.
+        // .listenOnly observes only: the app does not sit in the synchronous
+        // path of keyboard delivery, so there is no input latency and the
+        // system does not disable the tap on a timeout. That is enough for a
+        // lone modifier, which prints nothing by itself.
         //
-        // .defaultTap нужен для обычной клавиши: её события приходится съедать, иначе
-        // клавиша и запустит запись, и напечатается (или сработает как чужой шорткат).
-        // Съедается строго свой хоткей — всё остальное пропускается нетронутым.
+        // .defaultTap is needed for a regular key: its events have to be eaten,
+        // or the key would both start the recording and type itself (or fire as
+        // somebody else's shortcut). Strictly our own hotkey is eaten —
+        // everything else passes through untouched.
         let tapOptions: CGEventTapOptions = hotkey.requiresConsuming ? .defaultTap : .listenOnly
 
         guard let tap = CGEvent.tapCreate(
@@ -119,7 +122,7 @@ final class HotkeyListener {
         runLoopSource = nil
     }
 
-    /// Нажатие и отпускание кнопки мыши.
+    /// A mouse button press and release.
     func handleMouse(type: CGEventType, button: Int) {
         guard button == mouseButton else { return }
         switch type {
@@ -129,8 +132,8 @@ final class HotkeyListener {
         }
     }
 
-    /// Нажатие хоткея. В режиме переключателя отпускание игнорируется,
-    /// а нажатие попеременно запускает и останавливает запись.
+    /// A hotkey press. In toggle mode the release is ignored and the press
+    /// alternately starts and stops the recording.
     private func press() {
         if isToggle {
             coordinator?.handleHotkeyToggle()
@@ -149,7 +152,7 @@ final class HotkeyListener {
 
         if isModifierOnly {
             guard type == .flagsChanged else { return }
-            // Маска модификатора появилась — клавиша нажата, исчезла — отпущена.
+            // The modifier mask appeared — the key is down; it disappeared — the key is up.
             if flags.rawValue & requiredFlags != 0 {
                 press()
             } else {
@@ -166,20 +169,20 @@ final class HotkeyListener {
     }
 }
 
-// MARK: - Решение по событию
+// MARK: - Decision for an event
 
-/// Что сделать с клавиатурным событием.
+/// What to do with a keyboard event.
 ///
-/// Вынесено отдельной чистой функцией намеренно: именно здесь была ошибка, из-за
-/// которой приложение съедало отпускание у обычного набора той же буквы, и клавиша
-/// переставала печататься во всей системе. Такую логику нужно проверять тестом,
-/// а не на глаз внутри колбэка.
+/// Deliberately pulled out as a pure function: this is exactly where the bug
+/// lived that made the app eat the release of the same letter typed normally,
+/// so the key stopped printing system-wide. Logic like this needs a test, not
+/// an eyeball inside a callback.
 struct HotkeyEventDecision: Equatable {
-    /// Событие нужно съесть (не пропускать дальше в систему).
+    /// The event has to be eaten (not passed on to the system).
     let consume: Bool
-    /// Событие относится к нашему хоткею — сообщить координатору.
+    /// The event belongs to our hotkey — tell the coordinator.
     let handle: Bool
-    /// Новое состояние «наш хоткей зажат».
+    /// The new value of "our hotkey is held".
     let isDown: Bool
 
     static func decide(
@@ -191,18 +194,18 @@ struct HotkeyEventDecision: Equatable {
     ) -> HotkeyEventDecision {
         if isKeyDown {
             if isAutorepeat {
-                // Повтор своего зажатого хоткея съедаем, чужой пропускаем.
+                // Eat a repeat of our own held hotkey; let anybody else's through.
                 return .init(consume: wasDown, handle: false, isDown: wasDown)
             }
             let relevant = HotkeyListener.relevantFlags
             let matches = (flags & relevant) == (required & relevant)
-            // Та же клавиша без нужных модификаторов — обычный набор текста.
+            // The same key without the required modifiers is ordinary typing.
             guard matches else { return .init(consume: false, handle: false, isDown: wasDown) }
             return .init(consume: true, handle: true, isDown: true)
         }
 
-        // Отпускание: модификаторы уже могут быть отпущены, поэтому сверяемся
-        // не с ними, а с тем, было ли нажатие нашим.
+        // A release: the modifiers may already be up, so the check is not
+        // against them but against whether the press was ours.
         guard wasDown else { return .init(consume: false, handle: false, isDown: false) }
         return .init(consume: true, handle: true, isDown: false)
     }
@@ -210,7 +213,7 @@ struct HotkeyEventDecision: Equatable {
 
 // MARK: - Event tap callback
 
-/// Совпадение модификаторов — строгое: ⌥⌘D не должен срабатывать на ⌥⌘⇧D.
+/// The modifier match is strict: ⌥⌘D must not fire on ⌥⌘⇧D.
 private func flagsMatch(_ flags: CGEventFlags, required: UInt64) -> Bool {
     let relevant = HotkeyListener.relevantFlags
     return (flags.rawValue & relevant) == (required & relevant)
@@ -231,8 +234,8 @@ private let hotkeyEventTapCallback: CGEventTapCallBack = { _, type, event, refco
 
     let listener = Unmanaged<HotkeyListener>.fromOpaque(refcon).takeUnretainedValue()
 
-    // Хоткей на кнопке мыши: свою кнопку съедаем, иначе «Назад» продолжит листать
-    // страницы во время диктовки. Чужие кнопки не трогаем.
+    // A hotkey on a mouse button: our button is eaten, or "Back" would keep
+    // paging through the history during a dictation. Other buttons are left alone.
     if type == .otherMouseDown || type == .otherMouseUp {
         guard listener.mouseButton >= 0 else { return Unmanaged.passRetained(event) }
         let button = Int(event.getIntegerValueField(.mouseEventButtonNumber))
@@ -246,14 +249,14 @@ private let hotkeyEventTapCallback: CGEventTapCallBack = { _, type, event, refco
     guard listener.mouseButton < 0 else { return Unmanaged.passRetained(event) }
     let code = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
 
-    // Ранний фильтр: не спауним Task на каждое системное нажатие клавиш —
-    // только на события нашего хоткея.
+    // The early filter: no Task is spawned for every keypress in the system —
+    // only for the events of our hotkey.
     guard code == listener.keyCode else { return Unmanaged.passRetained(event) }
 
     let flags = event.flags
 
     if listener.isModifierOnly {
-        // Модификатор никогда не съедаем: съеденный ⌥ сломал бы ввод во всей системе.
+        // A modifier is never eaten: an eaten ⌥ would break typing system-wide.
         Task { @MainActor in
             listener.handleEvent(type: type, code: code, flags: flags)
         }
@@ -276,6 +279,6 @@ private let hotkeyEventTapCallback: CGEventTapCallBack = { _, type, event, refco
             listener.handleEvent(type: type, code: code, flags: flags)
         }
     }
-    // Съеденное событие не напечатается и не сработает как шорткат активного приложения.
+    // An eaten event neither types itself nor fires as a shortcut of the active application.
     return decision.consume ? nil : Unmanaged.passRetained(event)
 }

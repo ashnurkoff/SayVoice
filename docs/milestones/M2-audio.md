@@ -1,111 +1,111 @@
-# M2 — Захват аудио ✅ ЗАВЕРШЁН
+# M2 — Audio capture ✅ FINISHED
 
-**Цель:** Захватить PCM аудио с микрофона во время нажатого хоткея. Конвертировать в формат whisper.cpp: 16kHz, mono, Float32. Убедиться в корректности данных через сохранение отладочного WAV-файла.
+**Goal:** capture PCM audio from the microphone while the hotkey is held. Convert it into the whisper.cpp format: 16kHz, mono, Float32. Confirm the data is correct by saving a debug WAV file.
 
-**Оценка:** 1-2 рабочих дня
-**Зависимости:** M1 завершён (AppCoordinator, HotkeyListener работают)
-**Статус:** Завершён
+**Estimate:** 1-2 working days
+**Dependencies:** M1 finished (AppCoordinator and HotkeyListener work)
+**Status:** finished
 
 ---
 
-## Созданные файлы
+## Files created
 
 ### SayVoice/Permissions/PermissionManager.swift
 - `@MainActor final class PermissionManager`
-- Микрофон: `AVAudioApplication.requestRecordPermission()`
-- Accessibility: `AXIsProcessTrustedWithOptions` с литералом `"AXTrustedCheckOptionPrompt"` (macOS 26 concurrency-safe)
-- Методы открытия System Settings для обоих разрешений
+- The microphone: `AVAudioApplication.requestRecordPermission()`
+- Accessibility: `AXIsProcessTrustedWithOptions` with the literal `"AXTrustedCheckOptionPrompt"` (macOS 26 concurrency-safe)
+- Methods that open System Settings for both permissions
 
 ### SayVoice/Audio/AudioError.swift
 - `enum AudioError: Error, LocalizedError`
-- Кейсы: `engineStartFailed`, `formatConversionFailed`, `permissionDenied`, `noAudioInput`, `tapAlreadyInstalled`
+- Cases: `engineStartFailed`, `formatConversionFailed`, `permissionDenied`, `noAudioInput`, `tapAlreadyInstalled`
 
 ### SayVoice/Audio/AudioConverter.swift
 - `final class AudioConverter: @unchecked Sendable`
-- Конвертация из любого формата микрофона → 16kHz mono Float32 через `AVAudioConverter`
-- **RC high-pass фильтр (80 Hz cutoff)** — убирает DC offset, гул вентилятора, 50/60 Hz от сети
-- `@unchecked Sendable` — используется последовательно из audio tap callback
+- Converts any microphone format → 16kHz mono Float32 through `AVAudioConverter`
+- **An RC high-pass filter (80 Hz cutoff)** — removes the DC offset, fan hum, and 50/60 Hz mains buzz
+- `@unchecked Sendable` — used serially from the audio tap callback
 
 ### SayVoice/Audio/AudioRecorder.swift
-- `actor AudioRecorder` — потокобезопасное накопление PCM буфера
+- `actor AudioRecorder` — thread-safe accumulation of the PCM buffer
 - `startCapture()` → `installTap(onBus:)` + `engine.start()`
-- `stopCapture() -> [Float]` → `removeTap(onBus:)` + `engine.stop()` + возврат буфера
-- `nonisolated appendBufferSync` — конвертация на audio thread, запись через `Task { await self.append() }`
-- Логирование входного формата микрофона при старте
+- `stopCapture() -> [Float]` → `removeTap(onBus:)` + `engine.stop()` + returning the buffer
+- `nonisolated appendBufferSync` — conversion on the audio thread, written through `Task { await self.append() }`
+- The input format of the microphone is logged at startup
 
-## Изменённые файлы
+## Files changed
 
 ### SayVoice/App/AppCoordinator.swift
-- Добавлены `permissionManager`, `audioRecorder`
+- `permissionManager` and `audioRecorder` added
 - `handleKeyDown()` → `audioRecorder.startCapture()`
-- `handleKeyUp()` → `audioRecorder.stopCapture()` + логирование peak/RMS + debug WAV
-- **Accessibility fix**: `tccutil reset` для очистки stale TCC entries после ребилда (ad-hoc signing)
-- Polling с `prompt: false` для ожидания гранта
-- Debug WAV: ручная запись RIFF/WAV (44-byte header + Int16 PCM), пиковая нормализация (gain до 0.95)
+- `handleKeyUp()` → `audioRecorder.stopCapture()` + logging the peak/RMS + the debug WAV
+- **The Accessibility fix**: `tccutil reset` to clear stale TCC entries after a rebuild (ad-hoc signing)
+- Polling with `prompt: false` while waiting for the grant
+- The debug WAV: RIFF/WAV written by hand (a 44-byte header + Int16 PCM), peak normalisation (gain up to 0.95)
 
 ### SayVoice/HotkeyListener/HotkeyListener.swift
-- Добавлен параметр `start(prompt:)` — контролирует показ системного диалога
-- Guard `if eventTap != nil { return }` — защита от двойного tap
+- The `start(prompt:)` parameter added — it controls whether the system dialog is shown
+- The guard `if eventTap != nil { return }` — protection against a double tap
 
 ---
 
-## Проблемы и решения
+## Problems and solutions
 
-### 1. Accessibility постоянно сбрасывается
-**Симптом:** `AXIsProcessTrusted` возвращает `false` даже при включённом тоггле в System Settings.
-**Причина:** Ad-hoc code signing (`CODE_SIGN_IDENTITY: "-"`) — каждый ребилд создаёт новую сигнатуру, TCC database хранит старый хэш.
-**Решение:** `tccutil reset Accessibility com.sayvoice.app` перед запросом — удаляет stale entry, macOS создаёт свежую для текущего бинарника.
+### 1. Accessibility keeps resetting itself
+**Symptom:** `AXIsProcessTrusted` returns `false` even with the toggle switched on in System Settings.
+**Cause:** ad-hoc code signing (`CODE_SIGN_IDENTITY: "-"`) — every rebuild produces a new signature, and the TCC database holds the old hash.
+**Solution:** `tccutil reset Accessibility com.sayvoice.app` before the request — it removes the stale entry and macOS creates a fresh one for the current binary.
 
-### 2. Debug WAV не воспроизводится (Float32)
-**Симптом:** Quick Look / QuickTime Player показывают ошибку или играют тихо.
-**Причина:** Float32 WAV плохо поддерживается стандартными плеерами macOS.
-**Решение:** Ручная запись Int16 PCM WAV через `Data.write(to:)`, без AVAudioFile.
+### 2. The debug WAV does not play (Float32)
+**Symptom:** Quick Look / QuickTime Player show an error or play it quietly.
+**Cause:** Float32 WAV is poorly supported by the standard macOS players.
+**Solution:** write an Int16 PCM WAV by hand through `Data.write(to:)`, without AVAudioFile.
 
-### 3. AVAudioFile crash на Int16 буферах
-**Симптом:** `EXC_BREAKPOINT` на `file.write(from: buffer)`, ошибка -10877.
-**Причина:** AVAudioFile не поддерживает запись Int16 `AVAudioPCMBuffer` напрямую.
-**Решение:** Полностью обойти AVAudioFile — писать WAV руками (RIFF header + raw bytes).
+### 3. An AVAudioFile crash on Int16 buffers
+**Symptom:** `EXC_BREAKPOINT` on `file.write(from: buffer)`, error -10877.
+**Cause:** AVAudioFile does not support writing an Int16 `AVAudioPCMBuffer` directly.
+**Solution:** bypass AVAudioFile entirely — write the WAV by hand (a RIFF header + raw bytes).
 
-### 4. Тихая запись
-**Симптом:** Peak ~0.013, RMS ~0.001 — встроенный MacBook микрофон пишет тихо.
-**Решение:** Пиковая нормализация до 0.95 в debug WAV. Для whisper.cpp нормализация не нужна — он работает с любым уровнем.
+### 4. A quiet recording
+**Symptom:** peak ~0.013, RMS ~0.001 — the built-in MacBook microphone records quietly.
+**Solution:** peak normalisation to 0.95 in the debug WAV. whisper.cpp needs no normalisation — it works at any level.
 
 ---
 
-## Технические детали
+## Technical details
 
-### Формат аудио для whisper.cpp
+### The audio format for whisper.cpp
 - Sample rate: **16,000 Hz**
 - Channels: **1 (mono)**
-- Format: **PCM Float32**, диапазон [-1.0, 1.0]
+- Format: **PCM Float32**, the range [-1.0, 1.0]
 
-### Real-time audio thread
-`installTap(onBus:)` вызывает callback с реал-тайм приоритетом. Конвертация + `Task{}` допустимы для личного инструмента. Для production — использовать lock-free ring buffer.
+### The real-time audio thread
+`installTap(onBus:)` invokes the callback at real-time priority. Conversion plus a `Task{}` is acceptable for a personal tool. For production — use a lock-free ring buffer.
 
-### AVAudioEngine lifecycle
-`engine.stop()` **не удаляет** tap. Нужно `removeTap(onBus: 0)` перед `stop()`.
+### The AVAudioEngine lifecycle
+`engine.stop()` **does not remove** the tap. `removeTap(onBus: 0)` is needed before `stop()`.
 
 ---
 
-## Адаптация под macOS 26 (Tahoe)
+## Adapting to macOS 26 (Tahoe)
 
-### Переименованные API AVAudioNode
+### The renamed AVAudioNode APIs
 - `installTapOnBus(_:bufferSize:format:block:)` → `installTap(onBus:bufferSize:format:block:)`
 - `removeTapOnBus(_:)` → `removeTap(onBus:)`
 
-### Swift 6 Strict Concurrency
-- `AudioConverter` — `@unchecked Sendable` (последовательный вызов с audio thread)
-- `PermissionManager` — строковый литерал `"AXTrustedCheckOptionPrompt"` вместо `kAXTrustedCheckOptionPrompt`
+### Swift 6 strict concurrency
+- `AudioConverter` — `@unchecked Sendable` (called serially from the audio thread)
+- `PermissionManager` — the string literal `"AXTrustedCheckOptionPrompt"` instead of `kAXTrustedCheckOptionPrompt`
 
 ---
 
-## Критерии готовности M2
+## The M2 definition of done
 
-- [x] Нажать хоткей → микрофон активен
-- [x] Отпустить → консоль: `[SayVoice] Captured X samples (Y.Z sec)`
-- [x] `samples.count > 0` при записи > 0.5 сек
-- [x] Debug WAV сохраняется на Desktop и воспроизводится корректно (речь разборчива)
-- [x] Повторная запись работает без ошибок
-- [x] Отказ в разрешении → graceful error, нет краша
-- [x] Память не растёт с каждой записью (буфер очищается после stopCapture)
-- [x] High-pass фильтр убирает низкочастотный шум
+- [x] Press the hotkey → the microphone is active
+- [x] Release it → the console: `[SayVoice] Captured X samples (Y.Z sec)`
+- [x] `samples.count > 0` for a recording longer than 0.5 sec
+- [x] The debug WAV is saved to the Desktop and plays correctly (the speech is intelligible)
+- [x] Recording again works without errors
+- [x] A refused permission → a graceful error, no crash
+- [x] Memory does not grow with each recording (the buffer is cleared after stopCapture)
+- [x] The high-pass filter removes the low-frequency noise

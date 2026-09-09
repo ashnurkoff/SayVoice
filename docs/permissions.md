@@ -1,23 +1,23 @@
-# Разрешения macOS
+# macOS permissions
 
-## Обзор требований
+## Overview of the requirements
 
-SayVoice требует два системных разрешения и **выключенный App Sandbox**:
+SayVoice needs two system permissions and a **disabled App Sandbox**:
 
-| Разрешение | Назначение | Способ выдачи |
+| Permission | Purpose | How it is granted |
 |---|---|---|
-| Microphone | Захват голоса через AVAudioEngine | Системный диалог (автоматически) |
-| Accessibility | CGEventTap + AXUIElement text injection | Вручную в System Settings |
+| Microphone | Capturing the voice through AVAudioEngine | The system dialog (automatic) |
+| Accessibility | CGEventTap + AXUIElement text injection | By hand in System Settings |
 
 ---
 
-## 1. Microphone (Микрофон)
+## 1. Microphone
 
-### Зачем
+### Why
 
-`AVAudioEngine.inputNode` требует разрешения на доступ к микрофону. Без него `engine.start()` упадёт с ошибкой.
+`AVAudioEngine.inputNode` needs permission to use the microphone. Without it `engine.start()` fails with an error.
 
-### Как запросить (Swift)
+### How to request it (Swift)
 
 ```swift
 // macOS 14+
@@ -27,25 +27,25 @@ func requestMicrophonePermission() async -> Bool {
     return await AVAudioApplication.requestRecordPermission()
 }
 
-// Проверка текущего статуса (без диалога)
+// Checking the current status (no dialog)
 func checkMicrophoneStatus() -> AVAudioApplication.recordPermission {
     return AVAudioApplication.shared.recordPermission
 }
-// Возможные значения: .granted, .denied, .undetermined
+// The possible values: .granted, .denied, .undetermined
 ```
 
 ### Info.plist
 
 ```xml
 <key>NSMicrophoneUsageDescription</key>
-<string>SayVoice использует микрофон для записи голоса и транскрипции речи в текст.</string>
+<string>SayVoice uses the microphone to record your voice and transcribe speech into text.</string>
 ```
 
-Без этого ключа macOS крашит приложение при запросе разрешения.
+Without this key macOS crashes the application when the permission is requested.
 
-### Поведение при отказе
+### Behaviour on a refusal
 
-Если пользователь нажал "Не разрешать" → `AVAudioApplication.requestRecordPermission()` вернёт `false`. Повторный запрос невозможен программно — нужно открыть System Settings:
+If the user pressed "Don't Allow" → `AVAudioApplication.requestRecordPermission()` returns `false`. Asking again is impossible programmatically — System Settings has to be opened:
 
 ```swift
 if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
@@ -55,19 +55,19 @@ if let url = URL(string: "x-apple.systempreferences:com.apple.preference.securit
 
 ---
 
-## 2. Accessibility (Специальные возможности)
+## 2. Accessibility
 
-### Зачем
+### Why
 
-Два отдельных использования:
+Two separate uses:
 
-**a) CGEventTap — глобальный хоткей**
-`CGEventTapCreate(tap: .cgSessionEventTap, ...)` возвращает `nil` без Accessibility. Приложение не сможет получать события клавиатуры из других приложений.
+**a) CGEventTap — the global hotkey**
+`CGEventTapCreate(tap: .cgSessionEventTap, ...)` returns `nil` without Accessibility. The application cannot receive keyboard events from other applications.
 
-**b) AXUIElement — инжект текста**
-`AXUIElementCreateApplication(pid)` + `AXUIElementSetAttributeValue` требует Accessibility для изменения содержимого текстовых полей в других приложениях.
+**b) AXUIElement — text insertion**
+`AXUIElementCreateApplication(pid)` + `AXUIElementSetAttributeValue` needs Accessibility to change the contents of text fields in other applications.
 
-### Как проверить и направить пользователя
+### How to check it and guide the user
 
 ```swift
 import ApplicationServices
@@ -78,7 +78,7 @@ func isAccessibilityGranted() -> Bool {
 }
 
 func requestAccessibilityWithPrompt() {
-    // Показывает системный диалог "SayVoice хочет управлять этим компьютером"
+    // Shows the system dialog "SayVoice wants to control this computer"
     let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true] as CFDictionary
     AXIsProcessTrustedWithOptions(options)
 }
@@ -89,16 +89,16 @@ func openAccessibilitySettings() {
 }
 ```
 
-### Важное поведение
+### Important behaviour
 
-- Нет Info.plist ключа (в отличие от микрофона) — нельзя предоставить описание через plist
-- Пользователь должен **вручную** включить SayVoice в `System Settings > Privacy & Security > Accessibility`
-- После включения **не требуется перезапуск** приложения (CGEventTap можно создать заново)
-- При изменении разрешения (включили/выключили) приложение получает уведомление через `NSWorkspace.shared.notificationCenter` (event: `NSWorkspace.accessibilityDisplayOptionsDidChangeNotification`)
+- There is no Info.plist key (unlike the microphone) — no description can be supplied through the plist
+- The user has to enable SayVoice **by hand** in `System Settings > Privacy & Security > Accessibility`
+- **No restart** of the application is needed afterwards (the CGEventTap can simply be created again)
+- When the permission changes (enabled/disabled) the application is notified through `NSWorkspace.shared.notificationCenter` (event: `NSWorkspace.accessibilityDisplayOptionsDidChangeNotification`)
 
-### Input Monitoring (на некоторых версиях macOS)
+### Input Monitoring (on some macOS versions)
 
-На macOS 13+ CGEventTap с `kCGHIDEventTap` может **дополнительно** требовать Input Monitoring разрешение:
+On macOS 13+ a CGEventTap with `kCGHIDEventTap` may **additionally** require the Input Monitoring permission:
 
 ```swift
 import IOKit.hid
@@ -108,27 +108,27 @@ func checkInputMonitoring() -> Bool {
 }
 ```
 
-Если требуется — открыть `System Settings > Privacy & Security > Input Monitoring`.
+If it is required — open `System Settings > Privacy & Security > Input Monitoring`.
 
 ---
 
-## 3. App Sandbox — ОТКЛЮЧЁН
+## 3. App Sandbox — DISABLED
 
-### Почему обязательно отключить
+### Why it has to be switched off
 
-| Функция | Требование |
+| Feature | Requirement |
 |---|---|
-| `CGEventTapCreate(.cgSessionEventTap)` | Без sandbox или с `com.apple.security.temporary-exception.mach-lookup.global-name` |
-| `AXUIElementSetAttributeValue` в другие процессы | Без sandbox |
-| `CGEvent.post(tap: .cghidEventTap)` (синтетический Cmd+V) | Без sandbox |
+| `CGEventTapCreate(.cgSessionEventTap)` | No sandbox, or `com.apple.security.temporary-exception.mach-lookup.global-name` |
+| `AXUIElementSetAttributeValue` into other processes | No sandbox |
+| `CGEvent.post(tap: .cghidEventTap)` (the synthetic Cmd+V) | No sandbox |
 
-Sandboxed приложение может использовать только `CGEventTapCreate(.cgAnnotatedSessionEventTap)` — этот тип даёт только "слушать" события, но CGEventTap для global hotkey с `.cgSessionEventTap` недоступен.
+A sandboxed application can only use `CGEventTapCreate(.cgAnnotatedSessionEventTap)` — that type only lets it "listen" to events, and a CGEventTap for a global hotkey with `.cgSessionEventTap` is out of reach.
 
-### Последствия
+### Consequences
 
-- **Нельзя** публиковать в Mac App Store
-- Нужна подпись Developer ID (или локальный запуск)
-- Нет автоматических ограничений на доступ к файловой системе (ответственность разработчика)
+- The app **cannot** be published on the Mac App Store
+- A Developer ID signature is needed (or a local run)
+- There are no automatic restrictions on file system access (that is the developer's responsibility)
 
 ### SayVoice.entitlements
 
@@ -139,93 +139,93 @@ Sandboxed приложение может использовать только 
 <dict>
     <key>com.apple.security.app-sandbox</key>
     <false/>
-    <!-- Никаких других entitlements для v1 не требуется -->
+    <!-- No other entitlements are needed for v1 -->
 </dict>
 </plist>
 ```
 
 ---
 
-## 4. Онбординг Flow (первый запуск)
+## 4. The onboarding flow (first run)
 
 ```
-Запуск приложения
+The application starts
       │
       ▼
 PermissionManager.checkAll()
       │
-      ├─► Микрофон: .undetermined?
-      │         └─► показать системный диалог
+      ├─► Microphone: .undetermined?
+      │         └─► show the system dialog
       │               granted → ✓
-      │               denied  → показать инструкции + кнопка "Открыть настройки"
+      │               denied  → show the instructions + an "Open Settings" button
       │
       ├─► Accessibility: false?
-      │         └─► показать объяснение + кнопка "Открыть настройки"
-      │               (ждать ручного включения)
+      │         └─► show the explanation + an "Open Settings" button
+      │               (wait for it to be enabled by hand)
       │               granted → ✓
       │
-      ├─► Модель ggml-small.bin не найдена?
-      │         └─► показать ModelDownloadView
-      │               скачать (~465 MB с прогресс-баром)
-      │               готово → ✓
+      ├─► The ggml-small.bin model is missing?
+      │         └─► show ModelDownloadView
+      │               download (~465 MB with a progress bar)
+      │               done → ✓
       │
       ▼
-Приложение готово к работе
-(overlay: "SayVoice готов. Зажмите ⌥R для записи")
+The application is ready to work
+(overlay: "SayVoice is ready. Hold ⌥R to record")
 ```
 
-### Экраны онбординга (SwiftUI sheets в popover)
+### The onboarding screens (SwiftUI sheets in the popover)
 
-**Шаг 1 — Микрофон:**
+**Step 1 — Microphone:**
 ```
 ┌─────────────────────────────────────┐
-│  🎙  Доступ к микрофону             │
+│  🎙  Microphone access              │
 │                                     │
-│  SayVoice нужен доступ к            │
-│  микрофону для записи голоса.       │
+│  SayVoice needs access to the       │
+│  microphone to record your voice.   │
 │                                     │
-│  [Разрешить доступ]                 │
+│  [Allow access]                     │
 └─────────────────────────────────────┘
 ```
 
-**Шаг 2 — Accessibility:**
+**Step 2 — Accessibility:**
 ```
 ┌─────────────────────────────────────┐
-│  ♿  Специальные возможности        │
+│  ♿  Accessibility                  │
 │                                     │
-│  Нужен для:                         │
-│  • Глобального хоткея               │
-│  • Вставки текста                   │
+│  Needed for:                        │
+│  • The global hotkey                │
+│  • Inserting the text               │
 │                                     │
-│  Включите SayVoice в:               │
+│  Enable SayVoice in:                │
 │  System Settings > Privacy >        │
 │  Accessibility                      │
 │                                     │
-│  [Открыть настройки]  [Проверить]   │
+│  [Open Settings]  [Check again]     │
 └─────────────────────────────────────┘
 ```
 
-**Шаг 3 — Загрузка модели:**
+**Step 3 — Downloading the model:**
 ```
 ┌─────────────────────────────────────┐
-│  ⬇  Загрузка модели Whisper         │
+│  ⬇  Downloading the Whisper model   │
 │                                     │
 │  ggml-small (~465 MB)               │
 │  ████████░░░░░░  52%                │
 │                                     │
-│  Загружается один раз.              │
-│  Транскрипция работает офлайн.      │
+│  Downloaded once.                   │
+│  Transcription works offline.       │
 └─────────────────────────────────────┘
 ```
 
 ---
 
-## 5. Сводная таблица
+## 5. Summary table
 
 | | Microphone | Accessibility | App Sandbox |
 |---|---|---|---|
-| **Метод** | Системный диалог | Ручное в System Settings | Всегда выключен |
-| **Info.plist ключ** | `NSMicrophoneUsageDescription` | — | — |
-| **API проверки** | `AVAudioApplication.shared.recordPermission` | `AXIsProcessTrustedWithOptions` | — |
-| **Повторный запрос** | Только через System Settings | Нет диалога, только System Settings | — |
-| **При отказе** | Приложение не может записывать | Хоткей не работает, AX инжект не работает | Нет функциональности вообще |
+| **Method** | The system dialog | By hand in System Settings | Always off |
+| **Info.plist key** | `NSMicrophoneUsageDescription` | — | — |
+| **Check API** | `AVAudioApplication.shared.recordPermission` | `AXIsProcessTrustedWithOptions` | — |
+| **Asking again** | Only through System Settings | No dialog, only System Settings | — |
+| **On a refusal** | The application cannot record | The hotkey does not work, AX insertion does not work | No functionality at all |

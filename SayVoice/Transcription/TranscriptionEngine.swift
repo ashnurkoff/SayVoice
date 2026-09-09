@@ -9,18 +9,19 @@ actor TranscriptionEngine {
 
     static let minimumSampleCount = 4800 // 0.3 sec @ 16kHz
 
-    /// Beam search заметно точнее greedy, особенно на смешанной RU/EN речи.
+    /// Beam search is noticeably more accurate than greedy, especially on mixed RU/EN speech.
     static let beamSize = 5
 
-    /// Модель занимает 0.5–1.6 GB RAM — выгружаем после простоя.
+    /// The model takes 0.5–1.6 GB of RAM — it is unloaded after an idle period.
     static let idleUnloadInterval: Duration = .seconds(15 * 60)
 
-    /// Бюджет времени на транскрипцию: база на загрузку/прогрев модели плюс запас,
-    /// пропорциональный длине записи. Фиксированные 30 сек рвали длинную диктовку
-    /// (large-turbo + beam 5 на 60-секундной записи легко выходит за 30 сек — и вместо
-    /// текста пользователь получал ошибку). Таймаут — предохранитель от зависания,
-    /// а не ограничение длины: cancelAll() всё равно не прерывает синхронный вызов
-    /// whisper внутри актора, поэтому потолок лучше держать с запасом.
+    /// The time budget for a transcription: a base for loading and warming up
+    /// the model plus an allowance proportional to the length of the recording.
+    /// A fixed 30 seconds tore long dictations apart (large-turbo + beam 5 on a
+    /// 60-second recording easily runs past 30 seconds — and the user got an
+    /// error instead of text). The timeout is a safeguard against a hang, not a
+    /// limit on length: cancelAll() does not interrupt the synchronous whisper
+    /// call inside the actor anyway, so the ceiling is better kept generous.
     static let timeoutBaseSeconds = 30.0
     static let timeoutPerAudioSecond = 2.0
 
@@ -34,10 +35,10 @@ actor TranscriptionEngine {
     }
 
     func ensureLoaded(size: ModelManager.ModelSize) async throws {
-        // Модель уже загружена с нужным размером — ничего не делаем
+        // The model is already loaded at the right size — nothing to do
         if transcriber != nil && currentModelSize == size { return }
 
-        // Выгрузить текущую модель (смена размера или первый запуск)
+        // Unload the current model (a size change, or the first run)
         transcriber = nil
         currentModelSize = nil
 
@@ -57,29 +58,54 @@ actor TranscriptionEngine {
 
     // MARK: - Initial Prompt
 
-    /// Инструкция о пунктуации, которой заканчивается initial_prompt.
+    /// The punctuation instruction the initial_prompt ends with, in English —
+    /// the wrapper used for `en` and for `auto`.
     ///
-    /// У whisper нет отдельного поля «словарь»: initial_prompt — это буквально
-    /// «предыдущий текст», и модель копирует его стиль. Голый список терминов через
-    /// запятую, без единой точки, учит модель писать так же — речь возвращалась
-    /// сплошным текстом без точек, а иногда и без запятых. Замерено на диктовке без
-    /// пауз: сырой словарь — 0 точек и 0 запятых, тот же словарь внутри предложения —
-    /// 3 точки и 10 запятых, как и вовсе без промпта.
+    /// whisper has no separate "dictionary" field: initial_prompt is literally
+    /// "the preceding text", and the model copies its style. A bare list of
+    /// terms separated by commas, without a single period, teaches the model to
+    /// write the same way — speech came back as one unbroken run without
+    /// periods, and sometimes without commas. Measured on a dictation with no
+    /// pauses: the raw dictionary gave 0 periods and 0 commas; the same
+    /// dictionary inside a sentence gave 3 periods and 10 commas, as did no
+    /// prompt at all.
     ///
-    /// Инструкция идёт ПОСЛЕ словаря: при переполнении whisper берёт последние токены
-    /// промпта (whisper.cpp, n_take = prompt_past.end() - n_take), то есть отрезает
-    /// начало — так инструкция переживает длинный словарь.
+    /// The instruction goes AFTER the dictionary: on overflow whisper takes the
+    /// last tokens of the prompt (whisper.cpp, n_take = prompt_past.end() -
+    /// n_take), that is, it cuts the beginning — so the instruction survives a
+    /// long dictionary.
     static let punctuationHint =
+        "The transcript is written with ordinary punctuation: periods at the end of sentences, "
+        + "commas, question marks and capital letters."
+
+    /// The same instruction in Russian, used when the recognition language is
+    /// `ru`. The prompt is model input, not UI: whisper's initial_prompt biases
+    /// the decoder towards the language it is written in, so a Russian
+    /// dictation gets a Russian wrapper — and English speech must not, which is
+    /// what the EN→RU bug was.
+    static let russianPunctuationHint =
         "Расшифровка ведётся с обычной пунктуацией: точки в конце предложений, "
         + "запятые, вопросительные знаки и заглавные буквы."
 
-    /// Собирает initial_prompt из пользовательского словаря.
-    /// Пустой словарь — только инструкция о пунктуации.
-    static func initialPrompt(vocabulary: String?) -> String {
+    /// The sentence the dictionary is wrapped in, in the language of the hint.
+    private static let vocabularyLead = "The speech contains the following terms:"
+    private static let russianVocabularyLead = "В речи встречаются термины:"
+
+    /// Builds the initial_prompt from the user's dictionary.
+    /// An empty dictionary yields the punctuation instruction alone.
+    ///
+    /// - Parameter language: the whisper language code. `ru` gets the Russian
+    ///   wrapper; `en` — and `auto`, where the language is not known yet — get
+    ///   the English one, because the language the prompt is written in biases
+    ///   the decoder towards that language.
+    static func initialPrompt(vocabulary: String?, language: String = "auto") -> String {
+        let russian = language == "ru"
+        let hint = russian ? russianPunctuationHint : punctuationHint
         let vocab = (vocabulary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !vocab.isEmpty else { return punctuationHint }
+        guard !vocab.isEmpty else { return hint }
         let terms = vocab.hasSuffix(".") ? vocab : vocab + "."
-        return "В речи встречаются термины: \(terms) \(punctuationHint)"
+        let lead = russian ? russianVocabularyLead : vocabularyLead
+        return "\(lead) \(terms) \(hint)"
     }
 
     func transcribe(
@@ -107,7 +133,7 @@ actor TranscriptionEngine {
                     samples,
                     language: language,
                     beamSize: Self.beamSize,
-                    initialPrompt: Self.initialPrompt(vocabulary: vocabularyPrompt)
+                    initialPrompt: Self.initialPrompt(vocabulary: vocabularyPrompt, language: language)
                 )
             }
             let timeout = Self.timeoutSeconds(forSampleCount: samples.count)

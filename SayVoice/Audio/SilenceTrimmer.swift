@@ -1,43 +1,48 @@
 import Foundation
 
-/// Обрезка тишины и детекция «пустых» записей.
+/// Silence trimming and detection of "empty" recordings.
 ///
-/// Whisper галлюцинирует на тишине/тихом аудио: обученный на ютуб-субтитрах, он на
-/// пустом входе выдаёт клише вроде «Спасибо за субтитры…» / «Thank you for watching».
-/// Тот же эффект даёт хвостовая пауза в конце длинной диктовки — модель «дописывает»
-/// последнее окно клише вместо реального текста.
+/// Whisper hallucinates on silence and on quiet audio: trained on YouTube
+/// captions, it answers an empty input with cliches along the lines of "Thanks
+/// for the subtitles…" / "Thank you for watching". A trailing pause at the end
+/// of a long dictation does the same — the model fills the last window with a
+/// cliche instead of the real text.
 ///
-/// Решение до whisper:
-///  - если речи нет вообще → пропустить транскрипцию (ничего не вставлять);
-///  - иначе отрезать ведущую/хвостовую тишину, оставив небольшой паддинг.
+/// The fix, before whisper is reached:
+///  - no speech at all → skip the transcription (insert nothing);
+///  - otherwise cut the leading and trailing silence, keeping a little padding.
 ///
-/// Чистая функция без зависимостей — тестируется отдельно от приложения.
+/// A pure function with no dependencies — tested apart from the application.
 enum SilenceTrimmer {
 
-    /// 16 kHz mono — формат, в котором аудио приходит из AudioConverter.
+    /// 16 kHz mono — the format the audio arrives in from AudioConverter.
     static let sampleRate = 16_000
 
-    /// Длина кадра для оценки энергии: 30 мс.
+    /// Frame length for the energy estimate: 30 ms.
     static let frameLength = 480
 
-    /// Порог речи по RMS кадра. Тишина комнаты после HP-фильтра ≈ −60…−50 dBFS,
-    /// речь ≈ −35…−20 dBFS, тихая речь ≈ −42 dBFS. 0.005 ≈ −46 dBFS — консервативно:
-    /// уверенно ловит тишину и почти наверняка не режет реальную речь.
+    /// Speech threshold on a frame's RMS. Room silence after the high-pass
+    /// filter is ≈ −60…−50 dBFS, speech ≈ −35…−20 dBFS, quiet speech ≈ −42 dBFS.
+    /// 0.005 ≈ −46 dBFS — conservative: it catches silence reliably and almost
+    /// certainly never cuts real speech.
     static let speechRMSThreshold: Float = 0.005
 
-    /// Паддинг вокруг речи, чтобы не подрезать тихие начала/окончания слов: ~240 мс.
+    /// Padding around the speech, so quiet starts and ends of words are not clipped: ~240 ms.
     static let padFrames = 8
 
-    /// Сколько кадров должно быть речевыми, чтобы считать запись непустой: 10 × 30 мс = 0.3 с.
+    /// How many frames must be speech for the recording to count as non-empty:
+    /// 10 × 30 ms = 0.3 s.
     ///
-    /// Раньше хватало ОДНОГО кадра выше порога — случайный стук по столу или щелчок
-    /// кнопки проходили за речь, и whisper на такой записи дописывал initial_prompt:
-    /// в историю падали обрывки инструкции («Расшифровка ведёт к нам и решёт эту файл»)
-    /// и классический мусор вроде «Игорь Негода». В реальной диктовке речевых кадров
-    /// больше половины (замер: 62% на 21-секундной записи), так что порог с запасом.
+    /// ONE frame above the threshold used to be enough — a knock on the desk or
+    /// a button click passed for speech, and on such a recording whisper simply
+    /// continued the initial_prompt: garbled scraps of the instruction landed in
+    /// the history, along with the classic caption junk (the name of a Russian
+    /// YouTube channel). In a real dictation more than half the frames are
+    /// speech (measured: 62% on a 21-second recording), so the threshold has
+    /// room to spare.
     static let minSpeechFrames = 10
 
-    /// Диапазон сэмплов, содержащих речь (с паддингом), или nil, если речи нет.
+    /// The range of samples that contain speech (with padding), or nil when there is none.
     static func speechRange(
         _ samples: [Float],
         frameLength: Int = frameLength,
@@ -73,7 +78,7 @@ enum SilenceTrimmer {
             frameIndex += 1
         }
 
-        // Речи нет вообще либо её слишком мало, чтобы это была диктовка.
+        // No speech at all, or too little of it for this to be a dictation.
         guard firstSpeechFrame >= 0, speechFrames >= minSpeechFrames else { return nil }
 
         let start = max(0, (firstSpeechFrame - padFrames) * frameLength)
@@ -81,8 +86,8 @@ enum SilenceTrimmer {
         return start..<end
     }
 
-    /// Обрезает ведущую/хвостовую тишину. Возвращает nil, если речи нет —
-    /// вызывающий код должен в этом случае пропустить транскрипцию.
+    /// Cuts the leading and trailing silence. Returns nil when there is no
+    /// speech — the caller must then skip the transcription.
     static func trim(_ samples: [Float]) -> [Float]? {
         guard let range = speechRange(samples) else { return nil }
         if range.lowerBound == 0 && range.upperBound == samples.count {

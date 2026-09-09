@@ -1,21 +1,21 @@
 import AppKit
 import ApplicationServices
 
-/// Инжект текста через Accessibility API.
-/// Вставляет текст в позицию каретки или заменяет выделение.
-/// Работает в нативных Cocoa-приложениях (TextEdit, Notes, Xcode, Safari).
-/// Chrome/Electron блокируют AX — это ожидаемо, используется PasteboardInjector.
+/// Inserts text through the Accessibility API.
+/// Puts the text at the caret, or replaces the selection.
+/// Works in native Cocoa applications (TextEdit, Notes, Xcode, Safari).
+/// Chrome and Electron block AX — that is expected, and PasteboardInjector is used instead.
 final class AXTextInjector {
 
-    /// Попытка инжекта через AX API.
-    /// - Returns: true если успешно, false если нужен pasteboard fallback
+    /// Attempts an insertion through the AX API.
+    /// - Returns: true on success, false when the pasteboard fallback is needed
     func inject(text: String, targetPID: pid_t) -> Bool {
         let app = AXUIElementCreateApplication(targetPID)
         return injectIntoApp(text: text, appElement: app)
     }
 
     private func injectIntoApp(text: String, appElement: AXUIElement) -> Bool {
-        // Шаг 1: Получить сфокусированный элемент
+        // Step 1: get the focused element
         var focusedElementRef: AnyObject?
         let result = AXUIElementCopyAttributeValue(
             appElement,
@@ -29,12 +29,12 @@ final class AXTextInjector {
 
         let element = focusedRef as! AXUIElement
 
-        // Шаг 2: Попытаться вставить через AXSelectedText (предпочтительно — уважает позицию каретки)
+        // Step 2: try AXSelectedText first — it respects the caret position
         if injectViaSelectedText(text: text, element: element) {
             return true
         }
 
-        // Шаг 3: Fallback — заменить весь AXValue (менее предпочтительно)
+        // Step 3: fallback — replace the whole AXValue (less desirable)
         var settable: DarwinBoolean = false
         AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &settable)
         if settable.boolValue {
@@ -44,7 +44,7 @@ final class AXTextInjector {
         return false
     }
 
-    /// Вставляет текст в текущую позицию каретки, заменяя выделение если есть.
+    /// Inserts the text at the current caret position, replacing the selection if there is one.
     private func injectViaSelectedText(text: String, element: AXUIElement) -> Bool {
         var isSettable: DarwinBoolean = false
         AXUIElementIsAttributeSettable(element, kAXSelectedTextAttribute as CFString, &isSettable)
@@ -58,7 +58,7 @@ final class AXTextInjector {
         return result == .success
     }
 
-    /// Добавляет текст к текущему значению поля (fallback для AXSelectedText).
+    /// Appends the text to the field's current value (the fallback for AXSelectedText).
     private func injectViaFullValue(text: String, element: AXUIElement) -> Bool {
         var currentValueRef: AnyObject?
         AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &currentValueRef)

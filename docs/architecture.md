@@ -1,19 +1,19 @@
-# Архитектура SayVoice
+# SayVoice architecture
 
-## 1. Диаграмма компонентов
+## 1. Component diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        SayVoiceApp.swift                            │
-│       @main · NSApplicationDelegate · activationPolicy: .accessory │
+│       @main · NSApplicationDelegate · activationPolicy: .accessory  │
 └────────────────────────┬────────────────────────────────────────────┘
-                         │ создаёт и владеет
+                         │ creates and owns
                          ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                  AppCoordinator  (@MainActor class)                 │
 │                                                                     │
-│  Единственный источник истины. Реагирует на события компонентов,   │
-│  управляет переходами состояний, координирует вызовы.              │
+│  The single source of truth. Reacts to component events, drives     │
+│  the state transitions, coordinates the calls.                      │
 └──┬──────┬──────┬──────┬──────┬──────┬──────────────────────────────┘
    │      │      │      │      │      │
    │      │      │      │      │      └──► TranscriptionHistoryStore
@@ -27,38 +27,38 @@
                                            PermissionManager
 ```
 
-### Ответственности компонентов
+### Component responsibilities
 
-| Компонент | Ответственность |
+| Component | Responsibility |
 |---|---|
-| `AppCoordinator` | State machine, оркестрация, единственный источник истины |
-| `HotkeyListener` | CGEventTap, key-down/up события, конфигурация хоткея |
-| `AudioRecorder` | AVAudioEngine, захват PCM Float32 @ 16kHz mono |
-| `TranscriptionEngine` | Загрузка модели, вызов whisper.cpp, управление actor lifecycle |
-| `TextInjector` | AXUIElement инжект + pasteboard fallback |
-| `MenuBarController` | NSStatusItem, SF Symbol анимация по состоянию |
-| `OverlayWindowController` | NSPanel floating overlay без захвата фокуса |
-| `SettingsStore` | @Observable, UserDefaults, настройки пользователя |
-| `TranscriptionHistoryStore` | In-memory + JSON, последние 500 записей |
-| `PermissionManager` | Запрос и проверка Microphone + Accessibility |
+| `AppCoordinator` | The state machine, orchestration, the single source of truth |
+| `HotkeyListener` | CGEventTap, key-down/up events, the hotkey configuration |
+| `AudioRecorder` | AVAudioEngine, capturing PCM Float32 @ 16kHz mono |
+| `TranscriptionEngine` | Loading the model, calling whisper.cpp, managing the actor lifecycle |
+| `TextInjector` | AXUIElement insertion + the pasteboard fallback |
+| `MenuBarController` | NSStatusItem, SF Symbol animation per state |
+| `OverlayWindowController` | An NSPanel floating overlay that never takes focus |
+| `SettingsStore` | @Observable, UserDefaults, the user's settings |
+| `TranscriptionHistoryStore` | In-memory + JSON, the last 500 entries |
+| `PermissionManager` | Requesting and checking Microphone + Accessibility |
 
 ---
 
-## 2. State Machine
+## 2. State machine
 
 ```
                     ┌─────────────────────────────────────────────┐
                     │                   IDLE                      │
-                    │  • Иконка: "waveform" (серая, статичная)    │
-                    │  • Overlay: скрыт                           │
+                    │  • Icon: "waveform" (grey, static)          │
+                    │  • Overlay: hidden                          │
                     └──────────────────┬──────────────────────────┘
                                        │ hotkey keyDown
                                        ▼
                     ┌─────────────────────────────────────────────┐
                     │                RECORDING                    │
                     │  • AudioRecorder.startCapture()             │
-                    │  • Иконка: "waveform" красная, пульсирует   │
-                    │  • Overlay: "● Запись..."                   │
+                    │  • Icon: "waveform", red, pulsing           │
+                    │  • Overlay: "● Recording…"                  │
                     └──────────────────┬──────────────────────────┘
                                        │ hotkey keyUp
                                        ▼
@@ -66,106 +66,106 @@
                     │              TRANSCRIBING                   │
                     │  • AudioRecorder.stopCapture() → [Float32]  │
                     │  • TranscriptionEngine.transcribe() async   │
-                    │  • Иконка: "ellipsis.circle" оранжевая      │
-                    │  • Overlay: "Транскрибирую..."              │
+                    │  • Icon: "ellipsis.circle", orange          │
+                    │  • Overlay: "Transcribing…"                 │
                     └──────────────────┬──────────────────────────┘
-                                       │ результат String
+                                       │ the resulting String
                                        ▼
                     ┌─────────────────────────────────────────────┐
                     │               INJECTING                     │
                     │  • TextInjector.inject(text)                │
-                    │  • Overlay: показывает транскрибированный   │
-                    │    текст (зелёный), 1.5 сек                 │
+                    │  • Overlay: shows the transcribed text      │
+                    │    (green) for 1.5 sec                      │
                     └──────────────────┬──────────────────────────┘
-                                       │ инжект завершён
+                                       │ insertion finished
                                        ▼
                                      IDLE
 ```
 
-### Переходы при ошибках
+### Transitions on errors
 
-Из **любого** состояния при ошибке → IDLE:
+From **any** state, on an error → IDLE:
 
 ```
-RECORDING   → ошибка микрофона    → Overlay: "Ошибка микрофона"   → IDLE
-TRANSCRIBING → пустой результат   → Overlay: "Не услышал ничего"  → IDLE
-TRANSCRIBING → таймаут (>10 сек)  → Overlay: "Превышено время"    → IDLE
-TRANSCRIBING → запись < 0.3 сек   → тихо игнорируется             → IDLE
-INJECTING   → AX denied           → Overlay: "Нет доступа AX"     → IDLE
+RECORDING    → microphone error    → Overlay: "Microphone error"     → IDLE
+TRANSCRIBING → empty result        → Overlay: "Didn't catch anything" → IDLE
+TRANSCRIBING → timeout (>10 sec)   → Overlay: "Timed out"            → IDLE
+TRANSCRIBING → recording < 0.3 sec → silently ignored                → IDLE
+INJECTING    → AX denied           → Overlay: "No AX access"         → IDLE
 ```
 
 ---
 
-## 3. Data Flow
+## 3. Data flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                   Полный поток данных                           │
+│                    The full data flow                           │
 └─────────────────────────────────────────────────────────────────┘
 
-[Пользователь зажимает Right Option]
+[The user holds Right Option]
         │
         ▼
-CGEventTap callback (произвольный поток)
+CGEventTap callback (an arbitrary thread)
   └─► Task { @MainActor in coordinator.handleKeyDown() }
         │
         ▼
 AppCoordinator.handleKeyDown()
   └─► state = .recording
   └─► menuBarController.setState(.recording)
-  └─► overlayController.show("● Запись...")
+  └─► overlayController.show("● Recording…")
   └─► await audioRecorder.startCapture()
         │
         │   [AVAudioEngine installTapOnBus]
         │   [lock-free ring buffer ← PCM Float32 chunks @ 16kHz]
         │
-[Пользователь отпускает Right Option]
+[The user releases Right Option]
         │
         ▼
-CGEventTap callback (произвольный поток)
+CGEventTap callback (an arbitrary thread)
   └─► Task { @MainActor in coordinator.handleKeyUp() }
         │
         ▼
 AppCoordinator.handleKeyUp()
   └─► state = .transcribing
-  └─► overlayController.show("Транскрибирую...")
+  └─► overlayController.show("Transcribing…")
   └─► let samples = await audioRecorder.stopCapture()  // → [Float32]
         │
         ▼
-  [Проверка: samples.count < 4800? (< 0.3 сек) → IDLE, тихо]
+  [Check: samples.count < 4800? (< 0.3 sec) → IDLE, silently]
         │
         ▼
   await transcriptionEngine.transcribe(samples)
-    └─► WhisperContext.transcribe([Float32])  // actor, фоновый поток
-          └─► whisper_transcribe_pcm() C вызов
-          └─► возвращает String
+    └─► WhisperContext.transcribe([Float32])  // actor, background thread
+          └─► the whisper_transcribe_pcm() C call
+          └─► returns a String
         │
         ▼
-AppCoordinator получает String
+AppCoordinator receives the String
   └─► state = .injecting
   └─► textInjector.inject(text: result)
-        ├─► AXUIElement попытка (kAXSelectedTextAttribute)
-        │     успех → вставлено
-        │     провал ↓
-        └─► Pasteboard fallback
-              └─► сохранить буфер → вставить текст
+        ├─► the AXUIElement attempt (kAXSelectedTextAttribute)
+        │     success → inserted
+        │     failure ↓
+        └─► the pasteboard fallback
+              └─► save the pasteboard → put the text on it
               └─► CGEvent: keyDown Cmd+V → keyUp Cmd+V
-              └─► через 300ms: восстановить буфер
+              └─► after 300 ms: restore the pasteboard
         │
         ▼
-  overlayController.show(result, 1.5 сек → fade out)
+  overlayController.show(result, 1.5 sec → fade out)
   historyStore.append(TranscriptionEntry(...))
   state = .idle
 ```
 
 ---
 
-## 4. Swift 6 Concurrency Паттерны
+## 4. Swift 6 concurrency patterns
 
-### 4.1 Разделение акторов
+### 4.1 Splitting the actors
 
 ```swift
-// Главный поток UI — @MainActor
+// The main UI thread — @MainActor
 @MainActor
 final class AppCoordinator { ... }
 
@@ -175,17 +175,17 @@ final class MenuBarController { ... }
 @MainActor
 final class OverlayWindowController { ... }
 
-// Изолированные акторы (не MainActor — не блокируют UI)
-actor AudioRecorder { ... }         // накопление PCM буфера
-actor TranscriptionEngine { ... }   // lifecycle модели
-actor WhisperContext { ... }        // C-указатель на whisper_context*
+// Isolated actors (not MainActor — they never block the UI)
+actor AudioRecorder { ... }         // accumulating the PCM buffer
+actor TranscriptionEngine { ... }   // the model lifecycle
+actor WhisperContext { ... }        // the C pointer to whisper_context*
 ```
 
-### 4.2 CGEventTap → MainActor переход
+### 4.2 The CGEventTap → MainActor hop
 
 ```swift
-// CGEventTap callback вызывается на произвольном системном потоке.
-// Никогда не вызывайте AppCoordinator напрямую — только через Task.
+// The CGEventTap callback is invoked on an arbitrary system thread.
+// Never call AppCoordinator directly — only through a Task.
 let callback: CGEventTapCallBack = { proxy, type, event, refcon in
     let coordinator = Unmanaged<AppCoordinator>.fromOpaque(refcon!).takeUnretainedValue()
     Task { @MainActor in
@@ -195,40 +195,40 @@ let callback: CGEventTapCallBack = { proxy, type, event, refcon in
 }
 ```
 
-### 4.3 AVAudioEngine tap — реал-тайм поток
+### 4.3 The AVAudioEngine tap — a real-time thread
 
 ```swift
-// НЕЛЬЗЯ в tap callback:
-//   - Task { await actor.method() }  // может аллоцировать
-//   - Swift async/await вызовы
-//   - Любые аллокации (особенно на real-time потоке)
+// NOT allowed in the tap callback:
+//   - Task { await actor.method() }  // may allocate
+//   - Swift async/await calls
+//   - Any allocation (especially on a real-time thread)
 //
-// МОЖНО:
-//   - Запись в заранее выделенный lock-free ring buffer
-//   - OSAtomicAdd для счётчиков
-//   - Memcpy в pre-allocated буфер
+// Allowed:
+//   - Writing into a pre-allocated lock-free ring buffer
+//   - OSAtomicAdd for counters
+//   - memcpy into a pre-allocated buffer
 
 inputNode.installTapOnBus(0, bufferSize: 4096, format: fmt) { buffer, _ in
-    // Минимальная работа: копируем floats в ring buffer
+    // The minimum of work: copy the floats into the ring buffer
     self.ringBuffer.write(buffer)  // lock-free
 }
 ```
 
-### 4.4 Переключение контекстов
+### 4.4 Switching contexts
 
 ```swift
-// AudioRecorder — actor, вызывается с MainActor
+// AudioRecorder — an actor, called from the MainActor
 func stopCapture() async -> [Float] {
-    // Выполняется на actor executor AudioRecorder
+    // Runs on the AudioRecorder actor executor
     engine.inputNode.removeTapOnBus(0)
     engine.stop()
     defer { pcmBuffer = [] }
-    return pcmBuffer  // копия
+    return pcmBuffer  // a copy
 }
 
-// TranscriptionEngine — actor, держит тяжёлый WhisperContext
+// TranscriptionEngine — an actor, holds the heavy WhisperContext
 func transcribe(_ samples: [Float]) async throws -> String {
-    // Выполняется на actor executor TranscriptionEngine (не MainActor!)
+    // Runs on the TranscriptionEngine actor executor (not the MainActor!)
     guard let ctx = whisperContext else { throw TranscriptionError.modelNotLoaded }
     return try await ctx.transcribe(samples: samples)
 }
@@ -236,25 +236,25 @@ func transcribe(_ samples: [Float]) async throws -> String {
 
 ---
 
-## 5. Управление памятью
+## 5. Memory management
 
-- **Модель whisper.cpp** (~465 MB) загружается один раз при первом обращении и держится в памяти всё время работы приложения (дешевле повторная загрузка, пока приложение запущено).
-- `whisper_context*` — raw C-указатель, освобождается через `whisper_free()` в `deinit` актора `WhisperContext`.
-- PCM буфер очищается после каждой транскрипции (`defer { pcmBuffer = [] }`).
-- История транскрипций — максимум 500 записей, старые удаляются при добавлении новых.
+- **The whisper.cpp model** (~465 MB) is loaded once on first use and kept in memory for as long as the application runs (cheaper than loading it again while the app is up).
+- `whisper_context*` is a raw C pointer, released through `whisper_free()` in the `deinit` of the `WhisperContext` actor.
+- The PCM buffer is cleared after every transcription (`defer { pcmBuffer = [] }`).
+- The transcription history holds at most 500 entries; the old ones are dropped as new ones arrive.
 
 ---
 
-## 6. Ошибки и граничные случаи
+## 6. Errors and edge cases
 
-| Ситуация | Обработка |
+| Situation | Handling |
 |---|---|
-| Accessibility не выдан | `HotkeyListener` возвращает `.tapCreationFailed`; onboarding flow |
-| Микрофон не выдан | `PermissionManager` показывает системный alert |
-| Модель не скачана | `TranscriptionEngine` бросает `.modelNotLoaded`; открывается `ModelDownloadView` |
-| Запись < 0.3 сек | Тихо игнорируется, возврат в IDLE |
-| Пустой результат Whisper | Overlay: "Не услышал ничего", возврат в IDLE |
-| Таймаут транскрипции | `Task.sleep` + cancellation через 10 сек |
-| AX инжект провалился | Автоматический fallback на Pasteboard, без ошибки пользователю |
-| Pasteboard провалился | Логируем, Overlay: "Не удалось вставить текст" |
-| Password field | AX возвращает ошибку; fallback тоже не работает; Overlay предупреждает |
+| Accessibility not granted | `HotkeyListener` returns `.tapCreationFailed`; the onboarding flow |
+| Microphone not granted | `PermissionManager` shows the system alert |
+| The model is not downloaded | `TranscriptionEngine` throws `.modelNotLoaded`; `ModelDownloadView` opens |
+| Recording < 0.3 sec | Silently ignored, back to IDLE |
+| An empty result from Whisper | Overlay: "Didn't catch anything", back to IDLE |
+| Transcription timeout | `Task.sleep` + cancellation after 10 sec |
+| The AX insertion failed | An automatic fallback to the pasteboard, with no error for the user |
+| The pasteboard failed | Logged; Overlay: "Could not insert the text" |
+| A password field | AX returns an error; the fallback does not work either; the overlay warns |

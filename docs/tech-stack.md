@@ -1,75 +1,75 @@
-# Технический стек SayVoice
+# The SayVoice technical stack
 
-## 1. Платформа и язык
+## 1. Platform and language
 
 ### Swift + SwiftUI (macOS 14.0+)
 
-**Почему не Electron / Tauri:**
-- CGEventTap (глобальный хоткей) требует нативного процесса без web-рантайма
-- AXUIElement (текст инжект) — только нативный macOS API
-- Electron добавляет ~100-200 MB к бинарнику и ухудшает отзывчивость
-- SwiftUI + AppKit даёт лучший нативный feel и производительность
+**Why not Electron / Tauri:**
+- CGEventTap (the global hotkey) needs a native process without a web runtime
+- AXUIElement (text insertion) is a native macOS API only
+- Electron adds ~100-200 MB to the binary and hurts responsiveness
+- SwiftUI + AppKit gives the better native feel and performance
 
-**Почему не Python + PyObjC:**
-- Python требует рантайм (3.10+ с ~60 MB зависимостей)
-- PyObjC устарел, плохо поддерживает async/await
-- Сложнее встроить whisper.cpp (нужен Python-пакет или subprocess)
-- Медленнее для продакшн инструмента
+**Why not Python + PyObjC:**
+- Python needs a runtime (3.10+ with ~60 MB of dependencies)
+- PyObjC is dated and supports async/await poorly
+- Embedding whisper.cpp is harder (a Python package or a subprocess is needed)
+- Slower for a production tool
 
-**Swift 6 (strict concurrency):** Все компоненты используют `@MainActor`, `actor`, и structured concurrency. Это предотвращает data races на уровне компилятора.
+**Swift 6 (strict concurrency):** every component uses `@MainActor`, `actor` and structured concurrency. That prevents data races at the compiler level.
 
 ---
 
-## 2. Speech-to-Text: whisper.cpp
+## 2. Speech-to-text: whisper.cpp
 
-### Интеграция: локальный SPM пакет с C-мостом
+### Integration: a local SPM package with a C bridge
 
-**Почему не OpenAI Whisper API:**
-- Требует интернет + API-ключ пользователя
-- Передаёт аудио в облако (проблема приватности)
-- Задержка сети добавляет 1-3 сек к каждому запросу
-- Стоимость: ~$0.006 за минуту (накапливается при частом использовании)
+**Why not the OpenAI Whisper API:**
+- It needs the internet plus the user's API key
+- It sends the audio to the cloud (a privacy problem)
+- Network latency adds 1-3 sec to every request
+- Cost: ~$0.006 per minute (which adds up with frequent use)
 
-**Почему не mlx-whisper:**
-- Требует Python рантайм (несовместимо с нативным Swift приложением без subprocess)
-- Subprocess добавляет IPC-overhead и сложность управления процессом
+**Why not mlx-whisper:**
+- It needs a Python runtime (incompatible with a native Swift application short of a subprocess)
+- A subprocess adds IPC overhead and the complexity of managing a process
 
-**Почему whisper.cpp:**
-- Написан на C/C++ — напрямую вызывается из Swift через C-мост
-- Metal GPU ускорение на Apple Silicon — ~2-3 сек для 10-секундной фразы
-- Зрелый проект (ggerganov, 60k+ звёзд на GitHub)
-- Поддерживает все модели Whisper без изменений
+**Why whisper.cpp:**
+- Written in C/C++ — called straight from Swift through a C bridge
+- Metal GPU acceleration on Apple Silicon — ~2-3 sec for a 10-second phrase
+- A mature project (ggerganov, 60k+ stars on GitHub)
+- Supports every Whisper model unmodified
 
-### Структура SPM пакета
+### The structure of the SPM package
 
 ```
 Packages/
 └── CWhisper/
     ├── Package.swift
     └── Sources/
-        ├── CWhisper/                    ← C target
+        ├── CWhisper/                    ← the C target
         │   ├── include/
-        │   │   └── whisper_bridge.h     ← единственный заголовок, видимый Swift
-        │   ├── whisper.cpp              ← vendored (~ 10k строк)
+        │   │   └── whisper_bridge.h     ← the only header Swift sees
+        │   ├── whisper.cpp              ← vendored (~10k lines)
         │   ├── ggml.c
         │   ├── ggml-alloc.c
         │   ├── ggml-backend.cpp
         │   ├── ggml-quants.c
-        │   ├── ggml-metal.m             ← Objective-C для Metal интеграции
-        │   └── ggml-metal.metal         ← Metal шейдеры
-        └── WhisperSwift/                ← Swift target
-            ├── WhisperContext.swift     ← actor, OpaquePointer к C структуре
-            ├── WhisperTranscriber.swift ← высокоуровневый интерфейс
+        │   ├── ggml-metal.m             ← Objective-C for the Metal integration
+        │   └── ggml-metal.metal         ← the Metal shaders
+        └── WhisperSwift/                ← the Swift target
+            ├── WhisperContext.swift     ← an actor, an OpaquePointer to the C struct
+            ├── WhisperTranscriber.swift ← the high-level interface
             └── WhisperError.swift
 ```
 
-### Package.swift (ключевые моменты)
+### Package.swift (the key points)
 
 ```swift
-// Swift/C++ interop требует явного указания стандарта
+// Swift/C++ interop requires the standard to be stated explicitly
 .cxxLanguageStandard(.cxx17)
 
-// C target — компилятор флаги
+// The C target — compiler flags
 .target(
     name: "CWhisper",
     cSettings: [
@@ -85,12 +85,12 @@ Packages/
 )
 ```
 
-### whisper_bridge.h — C-мост для Swift
+### whisper_bridge.h — the C bridge for Swift
 
 ```c
-// Этот файл — единственная точка контакта между Swift и whisper.cpp.
-// Все типы C++, std::, namespace — скрыты внутри .cpp файлов.
-// Swift видит только чистый C (extern "C").
+// This file is the only point of contact between Swift and whisper.cpp.
+// Every C++ type, std::, namespace is hidden inside the .cpp files.
+// Swift sees pure C only (extern "C").
 
 #pragma once
 #include <stdint.h>
@@ -98,20 +98,20 @@ Packages/
 
 typedef struct whisper_context whisper_context;  // opaque
 
-// Параметры транскрипции
+// Transcription parameters
 typedef struct {
     int     n_threads;
-    int     language;       // -1 = авто-определение
-    bool    translate;      // true = переводить на английский
+    int     language;       // -1 = auto-detect
+    bool    translate;      // true = translate into English
     bool    no_timestamps;
-    float   temperature;    // 0.0 = детерминированный режим
+    float   temperature;    // 0.0 = deterministic mode
 } SayVoiceWhisperParams;
 
 // Lifecycle
 whisper_context* whisper_bridge_init(const char* model_path);
 void             whisper_bridge_free(whisper_context* ctx);
 
-// Транскрипция (возвращает heap-строку, освободить через whisper_bridge_free_string)
+// Transcription (returns a heap string; free it through whisper_bridge_free_string)
 char* whisper_bridge_transcribe(
     whisper_context*      ctx,
     const float*          samples,    // PCM Float32 @ 16kHz mono
@@ -121,152 +121,154 @@ char* whisper_bridge_transcribe(
 void whisper_bridge_free_string(char* str);
 ```
 
-> **`no_timestamps` всегда `false`.** Whisper декодирует аудио окнами по 30 секунд и
-> сдвигает окно на конец последнего распознанного сегмента. Без timestamp-токенов
-> сдвиг принудительно равен целым 30 секундам (`whisper.cpp`, `seek_delta = 100*WHISPER_CHUNK_SIZE`),
-> и речь, попавшая на стык окон, не декодируется ни в одном из них — на диктовке
-> длиннее 30 сек пропадали слова. Сами метки в текст не попадают: bridge собирает
-> сегменты через `whisper_full_get_segment_text` при `print_special = false`.
+> **`no_timestamps` is always `false`.** Whisper decodes audio in 30-second
+> windows and moves the window to the end of the last recognised segment.
+> Without timestamp tokens the shift is forced to whole 30 seconds
+> (`whisper.cpp`, `seek_delta = 100*WHISPER_CHUNK_SIZE`), and speech that falls
+> on the seam between windows is decoded in neither of them — words went missing
+> on dictations longer than 30 sec. The marks themselves never reach the text:
+> the bridge assembles the segments through `whisper_full_get_segment_text` with
+> `print_special = false`.
 
-### Выбор модели Whisper
+### Choosing the Whisper model
 
-| Модель | Размер | Скорость (M2 Pro) | Качество RU | Качество EN |
+| Model | Size | Speed (M2 Pro) | RU quality | EN quality |
 |---|---|---|---|---|
-| tiny | 75 MB | ~0.5 сек | ★★☆☆☆ | ★★★☆☆ |
-| base | 142 MB | ~0.8 сек | ★★★☆☆ | ★★★★☆ |
-| **small** | **465 MB** | **~2-3 сек** | **★★★★☆** | **★★★★★** |
-| medium | 1.5 GB | ~6-8 сек | ★★★★★ | ★★★★★ |
-| large | 3 GB | ~15 сек | ★★★★★ | ★★★★★ |
+| tiny | 75 MB | ~0.5 sec | ★★☆☆☆ | ★★★☆☆ |
+| base | 142 MB | ~0.8 sec | ★★★☆☆ | ★★★★☆ |
+| **small** | **465 MB** | **~2-3 sec** | **★★★★☆** | **★★★★★** |
+| medium | 1.5 GB | ~6-8 sec | ★★★★★ | ★★★★★ |
+| large | 3 GB | ~15 sec | ★★★★★ | ★★★★★ |
 
-**Выбор для v1: `ggml-small.bin`** — оптимальный баланс скорости и качества для личного инструмента. На Intel Mac рекомендуется `ggml-base.bin` (меньше время инференса без Metal).
+**The choice for v1: `ggml-small.bin`** — the best balance of speed and quality for a personal tool. On an Intel Mac `ggml-base.bin` is recommended (shorter inference time without Metal).
 
-**Источник модели:** Hugging Face — `ggerganov/whisper.cpp` репозиторий предоставляет готовые `.bin` файлы.
-
----
-
-## 3. Глобальный хоткей: CGEventTap
-
-### Почему не Carbon `RegisterEventHotKey`
-
-- Carbon API устарел (deprecated in macOS 12, но работает)
-- Не умеет различать key-down от key-hold для push-to-talk
-- Требует постоянный event loop в main thread
-- Не позволяет модифицировать или отменять события
-
-### Почему CGEventTap
-
-```
-Поток HID событий:
-  Клавиатура → IOKit → CGEventTap (наш) → EventQueue → Приложение
-```
-
-- Перехватывает события ДО их доставки в приложение
-- Чистые `keyDown` и `keyUp` события (не только hotkey-combo)
-- Работает из любого состояния системы
-- Не требует фокуса нашего приложения
-- Tap level: `.cgSessionEventTap` — уровень сессии пользователя
-
-**Дефолтный хоткей:** Right Option (keyCode 61) — не конфликтует с системными shortcuts, удобно удерживать большим пальцем.
+**Where the model comes from:** Hugging Face — the `ggerganov/whisper.cpp` repository provides ready-made `.bin` files.
 
 ---
 
-## 4. Захват аудио: AVAudioEngine
+## 3. The global hotkey: CGEventTap
 
-### Почему не AVAudioRecorder
+### Why not Carbon's `RegisterEventHotKey`
 
-- `AVAudioRecorder` пишет файл; нет доступа к real-time буферу PCM
-- Нельзя конвертировать формат "на лету"
+- The Carbon API is dated (deprecated in macOS 12, though it works)
+- It cannot tell a key-down from a key-hold, which push-to-talk needs
+- It requires a permanent event loop on the main thread
+- It does not allow events to be modified or cancelled
 
-### Почему не CoreAudio HAL напрямую
-
-- Требует ~200 строк C-кода (AudioComponent, AudioUnit, callbacks)
-- `AVAudioEngine` является обёрткой над CoreAudio — те же возможности, меньше кода
-
-### Pipeline
+### Why CGEventTap
 
 ```
-Микрофон (любая частота дискретизации, напр. 48kHz стерео)
+The stream of HID events:
+  Keyboard → IOKit → CGEventTap (ours) → EventQueue → the application
+```
+
+- Intercepts events BEFORE they are delivered to the application
+- Plain `keyDown` and `keyUp` events (not only hotkey combinations)
+- Works from any state of the system
+- Does not need our application to have focus
+- Tap level: `.cgSessionEventTap` — the level of the user session
+
+**The default hotkey:** Right Option (keyCode 61) — it conflicts with no system shortcut and is comfortable to hold with the thumb.
+
+---
+
+## 4. Audio capture: AVAudioEngine
+
+### Why not AVAudioRecorder
+
+- `AVAudioRecorder` writes a file; there is no access to a real-time PCM buffer
+- The format cannot be converted on the fly
+
+### Why not CoreAudio HAL directly
+
+- It takes ~200 lines of C code (AudioComponent, AudioUnit, callbacks)
+- `AVAudioEngine` is a wrapper over CoreAudio — the same capabilities, less code
+
+### The pipeline
+
+```
+The microphone (any sample rate, e.g. 48kHz stereo)
     │ installTapOnBus
     ▼
 AVAudioConverter
     │ hardware format → 16,000 Hz / 1 ch / Float32
     ▼
-Ring buffer (pre-allocated [Float32])
-    │ копирование в tap callback (lock-free)
+A ring buffer (a pre-allocated [Float32])
+    │ copied in the tap callback (lock-free)
     ▼
-[Float32] массив → передаётся в whisper.cpp
+A [Float32] array → handed to whisper.cpp
 ```
 
 ---
 
-## 5. Инжект текста: двойная стратегия
+## 5. Text insertion: a two-pronged strategy
 
-### Стратегия 1: AXUIElement (приоритет)
+### Strategy 1: AXUIElement (preferred)
 
 ```
 AXUIElementCreateApplication(pid)
-    └─► kAXFocusedUIElementAttribute → focused element
-          └─► kAXSelectedTextAttribute = наш текст
-                (вставляет в позицию каретки, заменяет выделение)
+    └─► kAXFocusedUIElementAttribute → the focused element
+          └─► kAXSelectedTextAttribute = our text
+                (inserts at the caret, replaces the selection)
 ```
 
-**Работает в:** TextEdit, Notes, Xcode, Pages, Mail, Safari URL bar, большинство нативных AppKit/SwiftUI полей.
+**Works in:** TextEdit, Notes, Xcode, Pages, Mail, the Safari URL bar, most native AppKit/SwiftUI fields.
 
-### Стратегия 2: Pasteboard + Cmd+V (fallback)
+### Strategy 2: the pasteboard + Cmd+V (the fallback)
 
 ```
-1. Сохранить NSPasteboard.general.string(forType: .string)
-2. NSPasteboard.setString(нашТекст)
+1. Save NSPasteboard.general.string(forType: .string)
+2. NSPasteboard.setString(ourText)
 3. CGEvent keyDown(Cmd+V) → post(tap: .cghidEventTap)
 4. CGEvent keyUp(Cmd+V)   → post(tap: .cghidEventTap)
 5. Task.sleep(300ms)
-6. Восстановить буфер обмена
+6. Restore the pasteboard
 ```
 
-**Работает в:** Chrome, Electron (VS Code, Notion app, Discord), Terminal, iTerm2, веб-формы.
+**Works in:** Chrome, Electron (VS Code, the Notion app, Discord), Terminal, iTerm2, web forms.
 
-**Не работает в:** Password fields (намеренно заблокировано macOS).
+**Does not work in:** password fields (deliberately blocked by macOS).
 
 ---
 
-## 6. Системные фреймворки
+## 6. System frameworks
 
-| Фреймворк | Используется для |
+| Framework | Used for |
 |---|---|
 | `AVFoundation` / `AVFAudio` | `AVAudioEngine`, `AVAudioConverter`, `AVAudioPCMBuffer` |
-| `CoreGraphics` | `CGEventTap` (глобальный хоткей), синтетические Cmd+V события |
-| `ApplicationServices` | `AXUIElement`, `AXUIElementCreateApplication` (текст инжект) |
+| `CoreGraphics` | `CGEventTap` (the global hotkey), the synthetic Cmd+V events |
+| `ApplicationServices` | `AXUIElement`, `AXUIElementCreateApplication` (text insertion) |
 | `AppKit` | `NSStatusItem`, `NSPanel`, `NSPasteboard`, `NSSound`, `NSWorkspace` |
-| `SwiftUI` | Overlay view, Settings sheet, History popover |
-| `Metal` / `MetalKit` | Ускорение ggml (whisper.cpp) на Apple Silicon |
-| `Accelerate` | BLAS/vDSP операции в ggml |
-| `CoreML` | Опциональное CoreML ускорение whisper (Milestone 5) |
-| `ServiceManagement` | `SMAppService.mainApp.register()` (автозапуск при входе) |
-| `UserNotifications` | Системные уведомления при ошибках (Milestone 5) |
-| `Foundation` | `URLSession` (скачивание модели), `UserDefaults`, `JSONEncoder` |
+| `SwiftUI` | The overlay view, the Settings sheet, the History popover |
+| `Metal` / `MetalKit` | Accelerating ggml (whisper.cpp) on Apple Silicon |
+| `Accelerate` | The BLAS/vDSP operations in ggml |
+| `CoreML` | Optional CoreML acceleration for whisper (Milestone 5) |
+| `ServiceManagement` | `SMAppService.mainApp.register()` (launch at login) |
+| `UserNotifications` | System notifications on errors (Milestone 5) |
+| `Foundation` | `URLSession` (downloading the model), `UserDefaults`, `JSONEncoder` |
 
 ---
 
-## 7. Внешние зависимости
+## 7. External dependencies
 
-**Политика:** Ноль внешних SPM зависимостей. Только:
-1. Локальный пакет `Packages/CWhisper/` (vendored C-код)
-2. Системные фреймворки Apple (нет внешних)
+**The policy:** zero external SPM dependencies. Only:
+1. The local `Packages/CWhisper/` package (vendored C code)
+2. Apple's system frameworks (nothing external)
 
-**Обоснование:**
-- Нет проблем supply-chain безопасности
-- Нет network fetches при `swift package resolve`
-- Проект полностью автономен (работает офлайн после скачивания модели)
-- Никаких breaking changes из-за обновлений зависимостей
+**The rationale:**
+- No supply-chain security problems
+- No network fetches on `swift package resolve`
+- The project is entirely self-contained (it works offline once the model is downloaded)
+- No breaking changes from dependency updates
 
 ---
 
-## 8. Сборка и дистрибуция
+## 8. Building and distribution
 
-- **Xcode** 15.0+ (или 16.0+ для macOS 14 target)
-- **App Sandbox**: отключён (см. [permissions.md](permissions.md))
-- **Подпись**: Developer ID Application (для распространения за пределами App Store)
-- **Дистрибуция**: прямой `.dmg` / zip, через GitHub Releases
-- **Нотаризация**: потребуется для Gatekeeper (xcrun notarytool)
+- **Xcode** 15.0+ (or 16.0+ for a macOS 14 target)
+- **App Sandbox**: disabled (see [permissions.md](permissions.md))
+- **Signing**: Developer ID Application (for distribution outside the App Store)
+- **Distribution**: a plain `.dmg` / zip, through GitHub Releases
+- **Notarisation**: needed for Gatekeeper (xcrun notarytool)
 
-> Для личного использования: достаточно подписи Developer ID или запуска без подписи (с разрешением в System Settings > Privacy & Security).
+> For personal use a Developer ID signature is enough, or running unsigned (with the permission granted in System Settings > Privacy & Security).

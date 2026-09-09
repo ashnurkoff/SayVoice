@@ -24,9 +24,9 @@ final class AppCoordinator {
     private let settingsRouter = SettingsRouter()
     private lazy var modelDownloads = ModelDownloads(modelManager: modelManager)
 
-    /// Приложение, в котором началась диктовка. Текст уходит именно туда, а не туда,
-    /// где пользователь оказался к моменту окончания: в режиме переключателя запись
-    /// длится долго, и за это время легко переключиться на другое окно.
+    /// The application the dictation started in. The text goes there, not
+    /// wherever the user has ended up by the time it finishes: in toggle mode a
+    /// recording runs for a long time, and switching windows meanwhile is easy.
     private var recordingTargetApp: NSRunningApplication?
     private var onboardingWindow: NSWindow?
     /// `willClose` observer for the onboarding window, filtered by that
@@ -93,17 +93,17 @@ final class AppCoordinator {
                 print("[SayVoice] Accessibility not granted — waiting for user to enable in System Settings...")
                 state = .error(.accessibilityPermissionDenied)
                 startAccessibilityPolling()
-                // continueStartupAfterAccessibility() вызовется из polling success
+                // continueStartupAfterAccessibility() is called from the polling success
             }
         }
     }
 
-    /// Одно нажатие в режиме переключателя: начинает или останавливает запись.
+    /// A single press in toggle mode: it starts or stops the recording.
     func handleHotkeyToggle() {
         switch state {
         case .idle:      handleKeyDown()
         case .recording: handleKeyUp()
-        default:         break   // идёт расшифровка или вставка — нажатие игнорируем
+        default:         break   // transcribing or inserting — the press is ignored
         }
     }
 
@@ -146,9 +146,10 @@ final class AppCoordinator {
                 return
             }
 
-            // Обрезаем ведущую/хвостовую тишину и отсекаем записи без речи — иначе
-            // whisper галлюцинирует клише («Спасибо за субтитры…») на тишине и
-            // «дописывает» хвостовую паузу в конце длинной диктовки.
+            // Cut the leading and trailing silence and drop recordings without
+            // speech — otherwise whisper hallucinates cliches ("Thanks for the
+            // subtitles…") on silence and fills in the trailing pause at the end
+            // of a long dictation.
             guard let samples = SilenceTrimmer.trim(rawSamples), samples.count >= 4800 else {
                 print("[SayVoice] No speech detected — skipping transcription")
                 state = .idle
@@ -199,7 +200,7 @@ final class AppCoordinator {
                     )
                 }
 
-                // Возвращаем активность приложению, где началась диктовка.
+                // Give the focus back to the application the dictation started in.
                 await activateRecordingTarget()
                 textInjector.inject(
                     text: text,
@@ -221,7 +222,7 @@ final class AppCoordinator {
                     showSettings(section: .recognition, highlight: modelSize)
                     state = .error(.modelNotLoaded)
                 case .emptyResult:
-                    state = .error(.transcriptionFailed("Не услышал ничего"))
+                    state = .error(.transcriptionFailed("Didn't catch anything"))
                 default:
                     print("[SayVoice] Transcription error: \(err)")
                     state = .error(.transcriptionFailed(err.localizedDescription))
@@ -266,8 +267,8 @@ final class AppCoordinator {
 
     // MARK: - Startup Continuation (after Accessibility granted)
 
-    /// Последовательный startup: Microphone → Model.
-    /// Вызывается только после того, как Accessibility уже granted.
+    /// The sequential startup: Microphone → Model.
+    /// Called only once Accessibility has been granted.
     private func continueStartupAfterAccessibility() {
         Task {
             // Step 2: Microphone permission
@@ -385,12 +386,12 @@ final class AppCoordinator {
         NSSound(named: "Basso")?.play()
     }
 
-    /// Делает фронтальным приложение, в котором началась диктовка.
+    /// Brings the application the dictation started in to the front.
     ///
-    /// Вставка текста идёт во фронтальное приложение: буфер обмена с синтетическим
-    /// Cmd+V попадает туда, куда система считает нужным. Поэтому перед вставкой цель
-    /// нужно вернуть на передний план и дождаться, пока переключение действительно
-    /// произошло — иначе текст уедет в чужое окно.
+    /// The text is inserted into the frontmost application: the pasteboard plus
+    /// a synthetic Cmd+V lands wherever the system decides. So before pasting,
+    /// the target has to be brought back to the front and the switch has to be
+    /// waited for — otherwise the text ends up in somebody else's window.
     private func activateRecordingTarget() async {
         defer { recordingTargetApp = nil }
         guard let target = recordingTargetApp, !target.isTerminated else { return }
@@ -399,13 +400,13 @@ final class AppCoordinator {
         if NSWorkspace.shared.frontmostApplication?.processIdentifier == pid { return }
 
         target.activate()
-        // Ждём подтверждения до 500 мс: активация асинхронная, и вставлять
-        // до её завершения бессмысленно.
+        // Wait for confirmation for up to 500 ms: activation is asynchronous,
+        // and pasting before it completes is pointless.
         for _ in 0..<10 {
             try? await Task.sleep(for: .milliseconds(50))
             if NSWorkspace.shared.frontmostApplication?.processIdentifier == pid { return }
         }
-        print("[SayVoice] Не удалось вернуть активность \(target.localizedName ?? "приложению") — вставляем во фронтальное")
+        print("[SayVoice] Could not bring \(target.localizedName ?? "the application") back to the front — pasting into the frontmost one")
     }
 
     // MARK: - State Change

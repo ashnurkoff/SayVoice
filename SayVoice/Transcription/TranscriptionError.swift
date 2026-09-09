@@ -10,11 +10,11 @@ enum TranscriptionError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .modelNotLoaded:         return "Модель не загружена"
-        case .modelLoadFailed(let u): return "Не удалось загрузить модель: \(u.lastPathComponent)"
-        case .inferenceError(let e):  return "Ошибка транскрипции: \(e.localizedDescription)"
-        case .emptyResult:            return "Не услышал ничего"
-        case .timeout:                return "Превышено время транскрипции"
+        case .modelNotLoaded:         return "The model is not loaded"
+        case .modelLoadFailed(let u): return "Could not load the model: \(u.lastPathComponent)"
+        case .inferenceError(let e):  return "Transcription failed: \(e.localizedDescription)"
+        case .emptyResult:            return "Didn't catch anything"
+        case .timeout:                return "Transcription timed out"
         case .recordingTooShort:      return ""
         }
     }

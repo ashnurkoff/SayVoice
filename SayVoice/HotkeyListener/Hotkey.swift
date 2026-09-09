@@ -1,35 +1,40 @@
 import Carbon.HIToolbox
 import CoreGraphics
 
-/// Хоткей записи: базовая клавиша плюс набор модификаторов.
+/// The recording hotkey: a base key plus a set of modifiers.
 ///
-/// Различаются два вида, и это не косметика — от вида зависит режим работы слушателя:
+/// There are two kinds, and the difference is not cosmetic — the kind decides
+/// how the listener works:
 ///
-/// * **Модификатор-одиночка** (правый ⌥ и т.п.) — нажатие ловится по появлению его
-///   маски в `flagsChanged`. Такое событие перехватывать нельзя: съеденный ⌥ сломал бы
-///   набор спецсимволов во всей системе. Слушатель остаётся наблюдателем (`.listenOnly`),
-///   то есть без задержки ввода и без риска отключения tap'а по таймауту.
+/// * **A lone modifier** (right ⌥ and the like) — the press is caught when its
+///   mask appears in `flagsChanged`. Such an event must not be consumed: an
+///   eaten ⌥ would break typing special characters system-wide. The listener
+///   stays an observer (`.listenOnly`), which means no input latency and no
+///   risk of the tap being disabled on a timeout.
 ///
-/// * **Обычная клавиша**, одна или с модификаторами (⌥⌘D, F13) — ловится по keyDown и
-///   keyUp. Её приходится перехватывать, иначе она и запустит запись, и напечатается
-///   (или сработает как чужой шорткат). Перехват включается только для таких хоткеев.
+/// * **A regular key**, alone or with modifiers (⌥⌘D, F13) — caught on keyDown
+///   and keyUp. It has to be consumed, or it would both start the recording and
+///   type itself (or fire as somebody else's shortcut). Consuming is enabled
+///   only for hotkeys of this kind.
 ///
-/// * **Кнопка мыши** (боковые кнопки, средняя, дополнительные кнопки игровых и
-///   продуктивных мышей) — ловится по `otherMouseDown`/`otherMouseUp` с номером кнопки.
-///   Тоже перехватывается: иначе «Назад» продолжит листать страницы во время диктовки.
+/// * **A mouse button** (the side buttons, the middle one, the extra buttons of
+///   gaming and productivity mice) — caught on `otherMouseDown`/`otherMouseUp`
+///   by button number. Consumed as well: otherwise "Back" would keep paging
+///   through the history during a dictation.
 struct Hotkey: Equatable, Sendable {
 
-    /// Код базовой клавиши.
+    /// The code of the base key.
     let keyCode: CGKeyCode
 
-    /// Сырая маска `CGEventFlags` модификаторов. Для модификатора-одиночки — маска
-    /// его самого. Хранится `UInt64`, а не `CGEventFlags`, чтобы тип оставался Sendable
-    /// и читался прямо из колбэка event tap'а.
+    /// The raw `CGEventFlags` mask of the modifiers. For a lone modifier this is
+    /// its own mask. Stored as `UInt64` rather than `CGEventFlags` so the type
+    /// stays Sendable and can be read straight from the event tap callback.
     let flags: UInt64
 
-    /// Номер кнопки мыши, если хоткей назначен на мышь. `nil` — хоткей клавиатурный.
-    /// Нумерация как в CGEvent: 0 — левая, 1 — правая, 2 — средняя, 3 и 4 — боковые
-    /// «Назад» и «Вперёд», дальше — дополнительные кнопки.
+    /// The mouse button number when the hotkey is assigned to the mouse; `nil`
+    /// for a keyboard hotkey. Numbered as in CGEvent: 0 is left, 1 is right,
+    /// 2 is middle, 3 and 4 are the side "Back" and "Forward" buttons, and the
+    /// extra buttons follow.
     var mouseButton: Int?
 
     init(keyCode: CGKeyCode, flags: UInt64, mouseButton: Int? = nil) {
@@ -38,21 +43,21 @@ struct Hotkey: Equatable, Sendable {
         self.mouseButton = mouseButton
     }
 
-    /// Хоткей на кнопке мыши.
+    /// A hotkey on a mouse button.
     init(mouseButton: Int) {
         self.keyCode = 0
         self.flags = 0
         self.mouseButton = mouseButton
     }
 
-    /// Хоткей по умолчанию — правый Option: свободен в macOS и не участвует в наборе.
+    /// The default hotkey — right Option: free in macOS and not used in typing.
     static let `default` = Hotkey(keyCode: 61, flags: CGEventFlags.maskAlternate.rawValue)
 
     var isMouse: Bool { mouseButton != nil }
 
-    // MARK: - Вид хоткея
+    // MARK: - Kind of hotkey
 
-    /// Коды клавиш-модификаторов и маски, которые они поднимают.
+    /// The codes of the modifier keys and the masks they raise.
     static let modifierKeys: [CGKeyCode: (mask: CGEventFlags, name: String)] = [
         61: (.maskAlternate,   "Right ⌥"),
         58: (.maskAlternate,   "Left ⌥"),
@@ -65,17 +70,17 @@ struct Hotkey: Equatable, Sendable {
         63: (.maskSecondaryFn, "Fn"),
     ]
 
-    /// Хоткей — одиночный модификатор, ловится по `flagsChanged` и не перехватывается.
+    /// The hotkey is a lone modifier: caught on `flagsChanged` and never consumed.
     var isModifierOnly: Bool { mouseButton == nil && Self.modifierKeys[keyCode] != nil }
 
-    /// События этого хоткея нужно съедать, чтобы клавиша не печаталась
-    /// и не срабатывала как шорткат активного приложения.
+    /// The events of this hotkey have to be eaten, so the key neither types
+    /// itself nor fires as a shortcut of the active application.
     var requiresConsuming: Bool { !isModifierOnly }
 
 
-    // MARK: - Отображение
+    // MARK: - Display
 
-    /// Подписи кнопок мыши. Номера — как в CGEvent.
+    /// Labels for the mouse buttons. The numbers are the CGEvent ones.
     static func mouseButtonName(_ button: Int) -> String {
         switch button {
         case 2:  return "Middle mouse button"
@@ -85,7 +90,7 @@ struct Hotkey: Equatable, Sendable {
         }
     }
 
-    /// Подпись для интерфейса: «Правый ⌥», «⌥⌘D», «F13», «Кнопка мыши «Назад»».
+    /// The label for the interface: "Right ⌥", "⌥⌘D", "F13", "Back mouse button".
     var displayName: String {
         if let button = mouseButton {
             return Self.mouseButtonName(button)
@@ -107,7 +112,7 @@ struct Hotkey: Equatable, Sendable {
         return s
     }
 
-    /// Клавиши без печатного символа — у них имя фиксированное.
+    /// Keys with no printable character — their names are fixed.
     private static let specialKeyNames: [CGKeyCode: String] = [
         36: "↩︎ Return", 48: "⇥ Tab", 49: "Space", 51: "⌫ Delete", 53: "⎋ Esc",
         76: "⌤ Enter", 117: "⌦ Fwd Delete",
@@ -119,12 +124,13 @@ struct Hotkey: Equatable, Sendable {
         79: "F18", 80: "F19", 90: "F20",
     ]
 
-    /// Имя обычной клавиши.
+    /// The name of a regular key.
     ///
-    /// Символ берётся из ASCII-раскладки, а не из активной: хоткей ловится по коду
-    /// клавиши и работает в любой раскладке, а вот подпись, взятая из активной, прыгала
-    /// бы при переключении языка (⌥⌘D превращалось в ⌥⌘В). Так же поступает сама macOS,
-    /// показывая сочетания в меню.
+    /// The character comes from the ASCII layout, not the active one: the hotkey
+    /// is caught by key code and works in any layout, while a label taken from
+    /// the active layout would jump around as the language is switched (⌥⌘D
+    /// turning into its Cyrillic counterpart). macOS itself does the same when
+    /// it shows shortcuts in a menu.
     static func keyName(_ keyCode: CGKeyCode) -> String {
         if let special = specialKeyNames[keyCode] { return special }
         if let char = printableCharacter(for: keyCode) { return char.uppercased() }
@@ -155,13 +161,13 @@ struct Hotkey: Equatable, Sendable {
         }
     }
 
-    // MARK: - Проверка допустимости
+    // MARK: - Validation
 
     enum Rejection {
-        /// Печатная клавиша без модификаторов: перехват сделал бы её нерабочей
-        /// во всех приложениях, пока SayVoice запущен.
+        /// A printing key with no modifiers: consuming it would make the key
+        /// useless in every application while SayVoice is running.
         case needsModifier
-        /// Клавиша, которую нельзя удерживать осмысленно.
+        /// A key that cannot meaningfully be held.
         case notUsable(String)
 
         var message: String {
@@ -174,22 +180,22 @@ struct Hotkey: Equatable, Sendable {
         }
     }
 
-    /// Проверяет, годится ли кнопка мыши как хоткей записи.
+    /// Checks whether a mouse button will do as the recording hotkey.
     static func validate(mouseButton: Int) -> Rejection? {
-        // Левая и правая кнопки — основа работы с системой; их перехват сделал бы
-        // мышь бесполезной, пока приложение запущено.
+        // The left and right buttons are the basis of using the system;
+        // consuming them would make the mouse useless while the app runs.
         if mouseButton <= 1 {
             return .notUsable("The left and right mouse buttons can't be assigned — without them you can't click or open context menus.")
         }
         return nil
     }
 
-    /// Проверяет, годится ли нажатая комбинация как хоткей записи.
+    /// Checks whether the pressed combination will do as the recording hotkey.
     static func validate(keyCode: CGKeyCode, flags: UInt64) -> Rejection? {
         if keyCode == 57 {
             return .notUsable("Caps Lock has no press/release pair, so holding it cannot work.")
         }
-        // Модификатор-одиночка допустим всегда.
+        // A lone modifier is always allowed.
         if modifierKeys[keyCode] != nil { return nil }
 
         let hasModifier = CGEventFlags(rawValue: flags)
@@ -197,14 +203,14 @@ struct Hotkey: Equatable, Sendable {
             .isEmpty == false
         if hasModifier { return nil }
 
-        // Без модификаторов разрешаем только клавиши, которые ничего не печатают
-        // и не используются в навигации — их перехват никому не мешает.
+        // Without modifiers, allow only keys that print nothing and are not
+        // used for navigation — consuming those gets in nobody's way.
         let safeBare: Set<CGKeyCode> = [105, 107, 113, 106, 64, 79, 80, 90]  // F13–F20
         return safeBare.contains(keyCode) ? nil : .needsModifier
     }
 
-    /// Известные конфликты — предупреждение показывается в настройках,
-    /// но выбор не блокируется.
+    /// Known conflicts — the warning is shown in the settings, but the choice
+    /// is not blocked.
     var warning: String? {
         if let button = mouseButton {
             if button == 2 {

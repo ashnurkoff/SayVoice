@@ -3,48 +3,48 @@ import Foundation
 import Observation
 import ServiceManagement
 
-/// Централизованное хранилище настроек приложения.
-/// Использует `@Observable` (macOS 14+) для реактивного обновления SwiftUI.
-/// Каждое свойство автоматически сохраняется в UserDefaults через `didSet`.
+/// The central store of the application settings.
+/// Uses `@Observable` (macOS 14+) so SwiftUI updates reactively.
+/// Every property saves itself to UserDefaults through `didSet`.
 @MainActor @Observable
 final class SettingsStore {
 
-    /// Хранилище, в которое пишутся настройки. По умолчанию — `.standard`;
-    /// тесты передают отдельный suite, чтобы не трогать настройки пользователя.
+    /// The storage the settings are written to. `.standard` by default; tests
+    /// pass a suite of their own so the user's settings are left alone.
     private let defaults: UserDefaults
 
     // MARK: - Properties
 
-    /// Virtual key code для hotkey записи. По умолчанию 61 (Right Option).
+    /// The virtual key code of the recording hotkey. 61 (Right Option) by default.
     var hotkeyCode: Int {
         didSet { defaults.set(hotkeyCode, forKey: SettingsKeys.hotkeyCode) }
     }
 
-    /// Модификаторы хоткея — сырая маска CGEventFlags. Для хоткея-модификатора
-    /// здесь маска его самого (см. Hotkey).
+    /// The hotkey modifiers — the raw CGEventFlags mask. For a modifier hotkey
+    /// this is its own mask (see Hotkey).
     var hotkeyFlags: Int {
         didSet { defaults.set(hotkeyFlags, forKey: SettingsKeys.hotkeyFlags) }
     }
 
-    /// Кнопка мыши, назначенная на запись; -1 — хоткей клавиатурный.
+    /// The mouse button assigned to recording; -1 means a keyboard hotkey.
     var hotkeyMouseButton: Int {
         didSet { defaults.set(hotkeyMouseButton, forKey: SettingsKeys.hotkeyMouseButton) }
     }
 
-    /// Как работает хоткей: "hold" — запись идёт, пока клавиша зажата;
-    /// "toggle" — нажал начал, нажал ещё раз остановил.
+    /// How the hotkey works: "hold" — the recording runs while the key is held;
+    /// "toggle" — one press starts it, another press stops it.
     ///
-    /// Переключатель нужен не для удобства, а потому что некоторые кнопки удержание
-    /// не передают: утилиты вроде Logi Options+ отправляют короткий тап (замерено —
-    /// 12 мс) независимо от того, сколько кнопку держат.
+    /// The toggle is not there for convenience but because some buttons do not
+    /// report a hold at all: utilities such as Logi Options+ send a short tap
+    /// (measured: 12 ms) no matter how long the button is held.
     var hotkeyMode: String {
         didSet { defaults.set(hotkeyMode, forKey: SettingsKeys.hotkeyMode) }
     }
 
     var hotkeyIsToggle: Bool { hotkeyMode == "toggle" }
 
-    /// Хоткей целиком. Раскладывается на три хранимых поля — UI и слушатель
-    /// работают с одним значением, а не с их комбинацией.
+    /// The hotkey as a whole. It decomposes into the three stored fields, so
+    /// the UI and the listener work with one value rather than a combination.
     var hotkey: Hotkey {
         get {
             Hotkey(
@@ -60,39 +60,40 @@ final class SettingsStore {
         }
     }
 
-    /// Размер модели Whisper: "tiny", "base", "small".
+    /// The Whisper model size: "tiny", "base", "small".
     var modelSize: String {
         didSet { defaults.set(modelSize, forKey: SettingsKeys.modelSize) }
     }
 
-    /// Язык распознавания: "auto" или код языка whisper ("ru", "en", "de", …).
+    /// The recognition language: "auto" or a whisper language code ("ru", "en", "de", …).
     var language: String {
         didSet { defaults.set(language, forKey: SettingsKeys.language) }
     }
 
-    /// Показывать overlay при записи и транскрипции.
+    /// Show the overlay while recording and transcribing.
     var overlayEnabled: Bool {
         didSet { defaults.set(overlayEnabled, forKey: SettingsKeys.overlayEnabled) }
     }
 
-    /// Возвращать прежнее содержимое буфера обмена после вставки диктовки.
-    /// true — буфер не страдает, но Cmd+V вставит то, что было скопировано раньше.
-    /// false — в буфере остаётся продиктованный текст, прежнее содержимое теряется.
+    /// Put the previous clipboard contents back after the dictation is pasted.
+    /// true — the clipboard is unharmed, but Cmd+V pastes whatever was copied
+    /// before. false — the dictated text stays on the clipboard and the previous
+    /// contents are lost.
     var restorePasteboard: Bool {
         didSet { defaults.set(restorePasteboard, forKey: SettingsKeys.restorePasteboard) }
     }
 
-    /// Воспроизводить звуки при начале/конце записи.
+    /// Play sounds when the recording starts and stops.
     var soundFeedback: Bool {
         didSet { defaults.set(soundFeedback, forKey: SettingsKeys.soundFeedback) }
     }
 
-    /// Метод вставки текста: "pasteboard" (Cmd+V) или "ax" (Accessibility API).
+    /// The text insertion method: "pasteboard" (Cmd+V) or "ax" (Accessibility API).
     var pasteMethod: String {
         didSet { defaults.set(pasteMethod, forKey: SettingsKeys.pasteMethod) }
     }
 
-    /// Запускать приложение при входе в систему.
+    /// Launch the application at login.
     var launchAtLogin: Bool {
         didSet {
             defaults.set(launchAtLogin, forKey: SettingsKeys.launchAtLogin)
@@ -100,30 +101,34 @@ final class SettingsStore {
         }
     }
 
-    /// Прошёл ли пользователь onboarding.
+    /// Whether the user has been through onboarding.
     var hasCompletedOnboarding: Bool {
         didSet { defaults.set(hasCompletedOnboarding, forKey: SettingsKeys.hasCompletedOnboarding) }
     }
 
-    /// Словарь/контекст для Whisper (initial_prompt): помогает точнее распознавать
-    /// смешанную RU/EN речь и специфичные термины. Пустая строка = без промпта.
+    /// The dictionary/context for Whisper (initial_prompt): it helps recognise
+    /// mixed RU/EN speech and specific terms more accurately. An empty string
+    /// means no prompt.
     var vocabularyPrompt: String {
         didSet { defaults.set(vocabularyPrompt, forKey: SettingsKeys.vocabularyPrompt) }
     }
 
-    /// Дефолтный промпт: голый список IT-терминов латиницей. `initial_prompt` в whisper —
-    /// это пример лексики/стиля, которым кондиционируется декодер. Список терминов
-    /// подсказывает их написание, НЕ навязывая язык всей диктовке.
+    /// The default prompt: a bare list of IT terms in the Latin alphabet.
+    /// `initial_prompt` in whisper is a sample of vocabulary and style that
+    /// conditions the decoder. A list of terms hints at their spelling WITHOUT
+    /// imposing a language on the whole dictation.
     ///
-    /// Раньше здесь была русская фраза-предложение ("Диктовка на русском языке..."),
-    /// которая смещала декодер к русским токенам и в auto-режиме "переводила"
-    /// английскую речь в русский (баг EN→RU). См. legacyRussianVocabularyPrompt.
+    /// What used to be here was a Russian sentence ("Dictation in Russian…"),
+    /// which pulled the decoder towards Russian tokens and, in auto mode,
+    /// "translated" English speech into Russian (the EN→RU bug). See
+    /// legacyRussianVocabularyPrompt.
     static let defaultVocabularyPrompt =
         "API, deployment, frontend, backend, commit, pull request, feature, bug, SwiftUI, Xcode, TypeScript, React, endpoint, refactor, staging, production."
 
-    /// Старый дефолт: русская фраза-предложение. Смещала whisper к русскому и ломала
-    /// английскую диктовку. Хранится только для миграции сохранённого значения — если
-    /// в UserDefaults лежит ровно эта строка, её нужно заменить новым дефолтом.
+    /// The old default: a Russian sentence. It pulled whisper towards Russian
+    /// and broke English dictation. Kept only to migrate a stored value — when
+    /// UserDefaults holds exactly this string, it has to be replaced with the
+    /// new default.
     static let legacyRussianVocabularyPrompt =
         "Диктовка на русском языке с английскими словами и IT-терминами: API, deployment, frontend, backend, commit, pull request, feature, bug, SwiftUI, Xcode."
 
@@ -133,7 +138,7 @@ final class SettingsStore {
         self.defaults = defaults
         let d = defaults
 
-        // Int: object(forKey:) as? Int ?? default — иначе integer(forKey:) вернёт 0 при отсутствии ключа
+        // Int: object(forKey:) as? Int ?? default — otherwise integer(forKey:) returns 0 for a missing key
         self.hotkeyCode  = d.object(forKey: SettingsKeys.hotkeyCode) as? Int ?? Int(Hotkey.default.keyCode)
         self.hotkeyFlags = d.object(forKey: SettingsKeys.hotkeyFlags) as? Int ?? Int(Hotkey.default.flags)
         self.hotkeyMouseButton = d.object(forKey: SettingsKeys.hotkeyMouseButton) as? Int ?? -1
@@ -144,18 +149,18 @@ final class SettingsStore {
         self.language    = d.string(forKey: SettingsKeys.language) ?? "auto"
         self.pasteMethod = d.string(forKey: SettingsKeys.pasteMethod) ?? "pasteboard"
 
-        // Bool с дефолтом true: object(forKey:) as? Bool ?? true
-        // (bool(forKey:) вернёт false при отсутствии ключа!)
+        // Bool defaulting to true: object(forKey:) as? Bool ?? true
+        // (bool(forKey:) returns false for a missing key!)
         self.overlayEnabled = d.object(forKey: SettingsKeys.overlayEnabled) as? Bool ?? true
         self.soundFeedback  = d.object(forKey: SettingsKeys.soundFeedback) as? Bool ?? true
         self.restorePasteboard = d.object(forKey: SettingsKeys.restorePasteboard) as? Bool ?? true
 
-        // Bool с дефолтом false: bool(forKey:) безопасен
+        // Bool defaulting to false: bool(forKey:) is safe
         self.launchAtLogin          = d.bool(forKey: SettingsKeys.launchAtLogin)
         self.hasCompletedOnboarding = d.bool(forKey: SettingsKeys.hasCompletedOnboarding)
 
-        // Миграция: пусто или ровно старый русский промпт → новый нейтральный дефолт.
-        // Кастомный промпт пользователя не трогаем.
+        // Migration: empty, or exactly the old Russian prompt → the new neutral
+        // default. A prompt the user wrote is left alone.
         let storedPrompt = d.string(forKey: SettingsKeys.vocabularyPrompt)
         if storedPrompt == nil || storedPrompt == Self.legacyRussianVocabularyPrompt {
             self.vocabularyPrompt = Self.defaultVocabularyPrompt

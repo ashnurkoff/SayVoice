@@ -1,70 +1,70 @@
-# Структура файлов проекта SayVoice
+# The file structure of the SayVoice project
 
-## Дерево проекта
+## The project tree
 
 ```
 SayVoice/
 ├── SayVoice.xcodeproj/
 │
-├── SayVoice/                                   ← основной таргет
+├── SayVoice/                                   ← the main target
 │   │
 │   ├── App/
-│   │   ├── SayVoiceApp.swift                   ← точка входа @main
-│   │   ├── AppCoordinator.swift                ← оркестратор, state machine
-│   │   └── AppState.swift                      ← enum состояний приложения
+│   │   ├── SayVoiceApp.swift                   ← the @main entry point
+│   │   ├── AppCoordinator.swift                ← the orchestrator, the state machine
+│   │   └── AppState.swift                      ← the enum of application states
 │   │
 │   ├── HotkeyListener/
 │   │   ├── HotkeyListener.swift                ← CGEventTap, key-down/up
-│   │   └── HotkeyError.swift                   ← ошибки регистрации хоткея
+│   │   └── HotkeyError.swift                   ← hotkey registration errors
 │   │
 │   ├── Audio/
-│   │   ├── AudioRecorder.swift                 ← actor, AVAudioEngine, PCM буфер
-│   │   ├── AudioConverter.swift                ← AVAudioConverter в 16kHz f32
+│   │   ├── AudioRecorder.swift                 ← an actor, AVAudioEngine, the PCM buffer
+│   │   ├── AudioConverter.swift                ← AVAudioConverter into 16kHz f32
 │   │   └── AudioError.swift
 │   │
 │   ├── Transcription/
-│   │   ├── TranscriptionEngine.swift           ← actor, lifecycle модели
+│   │   ├── TranscriptionEngine.swift           ← an actor, the model lifecycle
 │   │   └── TranscriptionError.swift
 │   │
 │   ├── TextInjection/
-│   │   ├── TextInjector.swift                  ← единая точка входа (AX → Pasteboard)
-│   │   ├── AXTextInjector.swift                ← AXUIElement логика
-│   │   └── PasteboardInjector.swift            ← clipboard + синтетический Cmd+V
+│   │   ├── TextInjector.swift                  ← the single entry point (AX → pasteboard)
+│   │   ├── AXTextInjector.swift                ← the AXUIElement logic
+│   │   └── PasteboardInjector.swift            ← the clipboard + a synthetic Cmd+V
 │   │
 │   ├── UI/
-│   │   ├── MenuBarController.swift             ← NSStatusItem, анимация иконки
-│   │   ├── OverlayWindowController.swift       ← NSPanel floating (non-activating)
-│   │   ├── OverlayView.swift                   ← SwiftUI вид оверлея
-│   │   ├── MenuBarPopoverView.swift            ← история + быстрые настройки
-│   │   └── SettingsView.swift                  ← полный экран настроек
+│   │   ├── MenuBarController.swift             ← NSStatusItem, the icon animation
+│   │   ├── OverlayWindowController.swift       ← a floating NSPanel (non-activating)
+│   │   ├── OverlayView.swift                   ← the SwiftUI view of the overlay
+│   │   ├── MenuBarPopoverView.swift            ← the history + quick settings
+│   │   └── SettingsView.swift                  ← the full settings screen
 │   │
 │   ├── Settings/
 │   │   ├── SettingsStore.swift                 ← @Observable, UserDefaults
-│   │   └── SettingsKeys.swift                  ← строковые константы ключей
+│   │   └── SettingsKeys.swift                  ← the string constants of the keys
 │   │
 │   ├── History/
-│   │   ├── TranscriptionHistoryStore.swift     ← @Observable, JSON персистенция
-│   │   └── TranscriptionEntry.swift            ← Codable struct записи
+│   │   ├── TranscriptionHistoryStore.swift     ← @Observable, JSON persistence
+│   │   └── TranscriptionEntry.swift            ← the Codable struct of an entry
 │   │
 │   ├── Permissions/
-│   │   └── PermissionManager.swift             ← проверка + запрос Mic + AX
+│   │   └── PermissionManager.swift             ← checking + requesting Mic + AX
 │   │
 │   ├── ModelManagement/
-│   │   ├── ModelManager.swift                  ← обнаружение, скачивание модели
-│   │   └── ModelDownloadView.swift             ← SwiftUI экран загрузки
+│   │   ├── ModelManager.swift                  ← finding and downloading the model
+│   │   └── ModelDownloadView.swift             ← the SwiftUI download screen
 │   │
 │   └── Resources/
-│       ├── Assets.xcassets                     ← иконка, template image для menu bar
+│       ├── Assets.xcassets                     ← the icon, the menu bar template image
 │       ├── SayVoice.entitlements               ← App Sandbox = NO
 │       └── Info.plist                          ← LSUIElement, NSMicrophoneUsageDescription
 │
 └── Packages/
-    └── CWhisper/                               ← локальный SPM пакет
+    └── CWhisper/                               ← the local SPM package
         ├── Package.swift
         └── Sources/
-            ├── CWhisper/                       ← C target (whisper.cpp + ggml)
+            ├── CWhisper/                       ← the C target (whisper.cpp + ggml)
             │   ├── include/
-            │   │   └── whisper_bridge.h        ← C API, видимый Swift
+            │   │   └── whisper_bridge.h        ← the C API Swift sees
             │   ├── whisper.cpp
             │   ├── ggml.c
             │   ├── ggml-alloc.c
@@ -72,7 +72,7 @@ SayVoice/
             │   ├── ggml-quants.c
             │   ├── ggml-metal.m
             │   └── ggml-metal.metal
-            └── WhisperSwift/                   ← Swift target
+            └── WhisperSwift/                   ← the Swift target
                 ├── WhisperContext.swift
                 ├── WhisperTranscriber.swift
                 └── WhisperError.swift
@@ -80,15 +80,15 @@ SayVoice/
 
 ---
 
-## Описание каждого файла
+## A description of every file
 
 ### App/
 
 **`SayVoiceApp.swift`**
-Точка входа (`@main`). Реализует `NSApplicationDelegate`. Вызывает `NSApp.setActivationPolicy(.accessory)` — убирает иконку из Dock. Не содержит `WindowGroup`. Создаёт и хранит `AppCoordinator`.
+The entry point (`@main`). Implements `NSApplicationDelegate`. Calls `NSApp.setActivationPolicy(.accessory)` — which removes the icon from the Dock. Contains no `WindowGroup`. Creates and holds the `AppCoordinator`.
 
 **`AppCoordinator.swift`**
-`@MainActor final class`. Центральный оркестратор. Хранит текущее состояние `AppState`. Реагирует на события от `HotkeyListener`, вызывает `AudioRecorder`, `TranscriptionEngine`, `TextInjector`. Публикует изменения состояния в UI компоненты.
+A `@MainActor final class`. The central orchestrator. Holds the current `AppState`. Reacts to the events from `HotkeyListener`, calls `AudioRecorder`, `TranscriptionEngine`, `TextInjector`. Publishes the state changes to the UI components.
 
 **`AppState.swift`**
 ```swift
@@ -106,13 +106,13 @@ enum AppState {
 ### HotkeyListener/
 
 **`HotkeyListener.swift`**
-Создаёт `CGEventTap` на уровне `.cgSessionEventTap`. Проверяет `AXIsProcessTrustedWithOptions` при старте. Вызывает `onKeyDown` / `onKeyUp` колбэки. Конфигурируемый keyCode (дефолт: 61 = Right Option). Управляет `CFMachPort` lifecycle.
+Creates a `CGEventTap` at the `.cgSessionEventTap` level. Checks `AXIsProcessTrustedWithOptions` at startup. Calls the `onKeyDown` / `onKeyUp` callbacks. A configurable keyCode (the default: 61 = Right Option). Manages the `CFMachPort` lifecycle.
 
 **`HotkeyError.swift`**
 ```swift
 enum HotkeyError: Error {
-    case tapCreationFailed          // Accessibility не выдан
-    case accessibilityNotGranted    // AX проверка провалилась
+    case tapCreationFailed          // Accessibility not granted
+    case accessibilityNotGranted    // the AX check failed
 }
 ```
 
@@ -121,10 +121,10 @@ enum HotkeyError: Error {
 ### Audio/
 
 **`AudioRecorder.swift`**
-`actor`. Создаёт `AVAudioEngine`, устанавливает tap на `inputNode`. Хранит pre-allocated ring buffer для PCM Float32 данных. Методы: `startCapture() async throws`, `stopCapture() async -> [Float]`. Tap callback использует только lock-free операции.
+An `actor`. Creates the `AVAudioEngine` and installs a tap on the `inputNode`. Holds a pre-allocated ring buffer for the PCM Float32 data. Methods: `startCapture() async throws`, `stopCapture() async -> [Float]`. The tap callback uses lock-free operations only.
 
 **`AudioConverter.swift`**
-Инкапсулирует `AVAudioConverter` логику. Принимает `AVAudioPCMBuffer` в аппаратном формате (напр. 48kHz stereo), возвращает `AVAudioPCMBuffer` в формате whisper (16kHz mono Float32).
+Encapsulates the `AVAudioConverter` logic. Takes an `AVAudioPCMBuffer` in the hardware format (48kHz stereo, say) and returns an `AVAudioPCMBuffer` in the whisper format (16kHz mono Float32).
 
 **`AudioError.swift`**
 ```swift
@@ -141,7 +141,7 @@ enum AudioError: Error {
 ### Transcription/
 
 **`TranscriptionEngine.swift`**
-`actor`. Ленивая загрузка `WhisperContext` при первом вызове. Метод `transcribe(_ samples: [Float]) async throws -> String`. Управляет отменой (Task cancellation) при таймауте. Делегирует в `WhisperTranscriber` из SPM пакета.
+An `actor`. Loads the `WhisperContext` lazily on the first call. The method `transcribe(_ samples: [Float]) async throws -> String`. Handles cancellation (Task cancellation) on a timeout. Delegates to `WhisperTranscriber` from the SPM package.
 
 **`TranscriptionError.swift`**
 ```swift
@@ -151,7 +151,7 @@ enum TranscriptionError: Error {
     case inferenceError
     case emptyResult
     case timeout
-    case recordingTooShort        // < 0.3 сек (< 4800 сэмплов)
+    case recordingTooShort        // < 0.3 sec (< 4800 samples)
 }
 ```
 
@@ -160,45 +160,45 @@ enum TranscriptionError: Error {
 ### TextInjection/
 
 **`TextInjector.swift`**
-Единая точка входа. Принимает `text: String`. Получает PID фронтального приложения через `NSWorkspace.shared.frontmostApplication`. Пробует `AXTextInjector`, при провале — `PasteboardInjector`. Добавляет trailing space к тексту.
+The single entry point. Takes `text: String`. Gets the PID of the frontmost application through `NSWorkspace.shared.frontmostApplication`. Tries `AXTextInjector` and falls back to `PasteboardInjector`. Appends a trailing space to the text.
 
 **`AXTextInjector.swift`**
-Реализует инжект через `AXUIElementCreateApplication(pid)` → `kAXFocusedUIElementAttribute` → `kAXSelectedTextAttribute`. Возвращает `Bool` (успех/провал). Обрабатывает edge cases: поле не фокусировано, атрибут не settable, password field.
+Implements the insertion through `AXUIElementCreateApplication(pid)` → `kAXFocusedUIElementAttribute` → `kAXSelectedTextAttribute`. Returns a `Bool` (success/failure). Handles the edge cases: no field focused, the attribute is not settable, a password field.
 
 **`PasteboardInjector.swift`**
-1. Сохраняет `NSPasteboard.general.string(forType: .string)`
-2. Записывает наш текст
-3. Создаёт синтетические `CGEvent` (keyDown Cmd+V, keyUp Cmd+V), постит через `.cghidEventTap`
-4. Через 300ms восстанавливает буфер обмена
+1. Saves `NSPasteboard.general.string(forType: .string)`
+2. Writes our text
+3. Creates synthetic `CGEvent`s (keyDown Cmd+V, keyUp Cmd+V) and posts them through `.cghidEventTap`
+4. Restores the pasteboard after 300 ms
 
 ---
 
 ### UI/
 
 **`MenuBarController.swift`**
-`@MainActor final class`. Создаёт `NSStatusItem` с `variableStatusItemLength`. Реагирует на `AppState` изменения: обновляет SF Symbol, цвет, анимацию. Левый клик → показывает `MenuBarPopoverView`. Правый клик → меню (История, Настройки, Quit).
+A `@MainActor final class`. Creates an `NSStatusItem` with `variableStatusItemLength`. Reacts to `AppState` changes: updates the SF Symbol, the colour, the animation. A left click shows `MenuBarPopoverView`. A right click opens the menu (History, Settings, Quit).
 
 **`OverlayWindowController.swift`**
-`@MainActor final class: NSWindowController`. Создаёт `NSPanel` с флагами `.borderless`, `.nonactivatingPanel`, `.hudWindow`. Уровень окна: `.floating`. Позиционирует в нижней части основного экрана. Методы: `show(message:isRecording:)`, `dismiss(animated:)`.
+A `@MainActor final class: NSWindowController`. Creates an `NSPanel` with the `.borderless`, `.nonactivatingPanel`, `.hudWindow` flags. Window level: `.floating`. Positioned in the lower part of the main screen. Methods: `show(message:isRecording:)`, `dismiss(animated:)`.
 
 **`OverlayView.swift`**
-SwiftUI `View`. Показывает пульсирующий красный кружок при записи, текст сообщения. Материал `.ultraThinMaterial`, скруглённые углы. Анимация fade-in при появлении.
+A SwiftUI `View`. Shows a pulsing red dot while recording, plus the message text. The `.ultraThinMaterial` material, rounded corners. A fade-in animation on appearance.
 
 **`MenuBarPopoverView.swift`**
-SwiftUI `View`. Список последних 10 транскрипций с временными метками. Нажатие на запись → копировать в буфер обмена. Кнопка "Очистить историю". Ссылка "Настройки...". Показывается в `NSPopover`.
+A SwiftUI `View`. A list of the last 10 transcriptions with timestamps. Clicking an entry copies it to the pasteboard. A "Clear history" button. A "Settings…" link. Shown in an `NSPopover`.
 
 **`SettingsView.swift`**
-SwiftUI `View`. Секции: хоткей (click-to-record пикер), выбор модели, язык (Авто/EN/RU), переключатели (overlay, звук, метод вставки). Открывается через `NSApp.sendAction(Selector("showSettingsWindow:"), ...)` или из popover.
+A SwiftUI `View`. Sections: the hotkey (a click-to-record picker), choosing the model, the language (Auto/EN/RU), the toggles (overlay, sound, insertion method). Opened through `NSApp.sendAction(Selector("showSettingsWindow:"), ...)` or from the popover.
 
 ---
 
 ### Settings/
 
 **`SettingsStore.swift`**
-`@Observable final class`. Читает/пишет `UserDefaults`. Публикует изменения подписчикам. Свойства: `hotkeyCode: Int`, `modelSize: String`, `language: String`, `overlayEnabled: Bool`, `soundFeedback: Bool`, `pasteMethod: String`, `launchAtLogin: Bool`.
+An `@Observable final class`. Reads and writes `UserDefaults`. Publishes the changes to its subscribers. Properties: `hotkeyCode: Int`, `modelSize: String`, `language: String`, `overlayEnabled: Bool`, `soundFeedback: Bool`, `pasteMethod: String`, `launchAtLogin: Bool`.
 
 **`SettingsKeys.swift`**
-Строковые константы:
+The string constants:
 ```swift
 enum SettingsKeys {
     static let hotkeyCode     = "sv_hotkey_code"
@@ -216,7 +216,7 @@ enum SettingsKeys {
 ### History/
 
 **`TranscriptionHistoryStore.swift`**
-`@Observable final class`. Хранит `[TranscriptionEntry]` (max 500). Персистирует в `~/Library/Application Support/SayVoice/history.json`. Методы: `append(_:)`, `clear()`, `entries(last:)`.
+An `@Observable final class`. Holds `[TranscriptionEntry]` (max 500). Persists to `~/Library/Application Support/SayVoice/history.json`. Methods: `append(_:)`, `clear()`, `entries(last:)`.
 
 **`TranscriptionEntry.swift`**
 ```swift
@@ -224,8 +224,8 @@ struct TranscriptionEntry: Codable, Identifiable {
     let id: UUID
     let date: Date
     let text: String
-    let durationSeconds: Double     // длительность записи
-    let language: String?           // определённый язык ("ru", "en")
+    let durationSeconds: Double     // the length of the recording
+    let language: String?           // the detected language ("ru", "en")
 }
 ```
 
@@ -234,31 +234,31 @@ struct TranscriptionEntry: Codable, Identifiable {
 ### Permissions/
 
 **`PermissionManager.swift`**
-`@MainActor final class`. Методы:
+A `@MainActor final class`. Methods:
 - `requestMicrophone() async -> Bool`
 - `isMicrophoneGranted: Bool` (computed)
 - `isAccessibilityGranted: Bool`
-- `requestAccessibilityPrompt()` — показывает системный диалог
-- `openAccessibilitySettings()` — открывает System Settings
-- `openMicrophoneSettings()` — открывает System Settings
+- `requestAccessibilityPrompt()` — shows the system dialog
+- `openAccessibilitySettings()` — opens System Settings
+- `openMicrophoneSettings()` — opens System Settings
 
 ---
 
 ### ModelManagement/
 
 **`ModelManager.swift`**
-`@MainActor final class`. Директория: `~/Library/Application Support/SayVoice/Models/`. Методы: `isModelAvailable(size:) -> Bool`, `downloadModel(size:) async throws` (публикует прогресс через `AsyncStream<Double>`). Поддерживаемые размеры: "tiny", "base", "small".
+A `@MainActor final class`. The directory: `~/Library/Application Support/SayVoice/Models/`. Methods: `isModelAvailable(size:) -> Bool`, `downloadModel(size:) async throws` (which publishes the progress through an `AsyncStream<Double>`). The supported sizes: "tiny", "base", "small".
 
 **`ModelDownloadView.swift`**
-SwiftUI `View`. Список доступных моделей с размерами и характеристиками. Кнопка "Скачать" с прогресс-баром. Показывает уже скачанные модели с галочкой.
+A SwiftUI `View`. A list of the available models with their sizes and characteristics. A "Download" button with a progress bar. Models already downloaded are shown with a tick.
 
 ---
 
 ### Resources/
 
 **`Assets.xcassets`**
-- `AppIcon.appiconset` — иконка приложения (1024x1024)
-- `MenuBarIcon.imageset` — template image 18x18pt для menu bar (чёрный waveform на прозрачном)
+- `AppIcon.appiconset` — the application icon (1024x1024)
+- `MenuBarIcon.imageset` — an 18x18pt template image for the menu bar (a black waveform on transparency)
 
 **`SayVoice.entitlements`**
 ```xml
@@ -266,9 +266,9 @@ SwiftUI `View`. Список доступных моделей с размера
 <false/>
 ```
 
-**`Info.plist`** (ключевые записи)
+**`Info.plist`** (the key entries)
 ```xml
-<key>LSUIElement</key>          <!-- Нет иконки в Dock -->
+<key>LSUIElement</key>          <!-- No icon in the Dock -->
 <true/>
 <key>NSMicrophoneUsageDescription</key>
 <string>...</string>
@@ -283,16 +283,16 @@ SwiftUI `View`. Список доступных моделей с размера
 ### Packages/CWhisper/
 
 **`Package.swift`**
-Определяет два таргета: `CWhisper` (C/C++/ObjC) и `WhisperSwift` (Swift, зависит от CWhisper). Флаги компиляции: `-std=c++17`, `-O3`, `GGML_USE_METAL`. Линкует Metal, Accelerate, CoreML.
+Defines two targets: `CWhisper` (C/C++/ObjC) and `WhisperSwift` (Swift, depending on CWhisper). Compilation flags: `-std=c++17`, `-O3`, `GGML_USE_METAL`. Links Metal, Accelerate, CoreML.
 
 **`whisper_bridge.h`**
-Единственный публичный заголовок C-моста. Определяет `SayVoiceWhisperParams`, функции `whisper_bridge_init`, `whisper_bridge_free`, `whisper_bridge_transcribe`, `whisper_bridge_free_string`. Все с `extern "C"`.
+The only public header of the C bridge. Defines `SayVoiceWhisperParams` and the functions `whisper_bridge_init`, `whisper_bridge_free`, `whisper_bridge_transcribe`, `whisper_bridge_free_string`. All of them `extern "C"`.
 
 **`WhisperContext.swift`**
-`actor`. Хранит `OpaquePointer?` к `whisper_context*`. Инициализируется из URL модели. Метод `transcribe(samples: [Float], language: String?) throws -> String`. `deinit` вызывает `whisper_bridge_free`.
+An `actor`. Holds an `OpaquePointer?` to `whisper_context*`. Initialised from the model URL. The method `transcribe(samples: [Float], language: String?) throws -> String`. Its `deinit` calls `whisper_bridge_free`.
 
 **`WhisperTranscriber.swift`**
-Высокоуровневый интерфейс. Принимает `[Float]`, возвращает `String`. Настраивает `SayVoiceWhisperParams` (n_threads = ProcessInfo.processInfo.processorCount, language = -1 для авто).
+The high-level interface. Takes a `[Float]`, returns a `String`. Sets up `SayVoiceWhisperParams` (n_threads = ProcessInfo.processInfo.processorCount, language = -1 for auto).
 
 **`WhisperError.swift`**
 ```swift
@@ -305,12 +305,12 @@ enum WhisperError: Error {
 
 ---
 
-## Итоги
+## Totals
 
-| Метрика | Значение |
+| Metric | Value |
 |---|---|
-| Swift файлов (основной таргет) | 25 |
-| Swift файлов (SPM пакет) | 3 |
-| C/C++ файлов (vendored whisper.cpp) | 8 |
-| Внешних SPM зависимостей | 0 |
-| Системных фреймворков | 10 |
+| Swift files (the main target) | 25 |
+| Swift files (the SPM package) | 3 |
+| C/C++ files (vendored whisper.cpp) | 8 |
+| External SPM dependencies | 0 |
+| System frameworks | 10 |

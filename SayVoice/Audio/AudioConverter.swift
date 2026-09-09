@@ -1,7 +1,7 @@
 @preconcurrency import AVFAudio
 
-/// Конвертирует AVAudioPCMBuffer из любого формата в 16kHz mono Float32 для whisper.cpp.
-/// Помечен @unchecked Sendable т.к. используется только последовательно из audio tap callback.
+/// Converts an AVAudioPCMBuffer from any format to 16 kHz mono Float32 for whisper.cpp.
+/// Marked @unchecked Sendable because it is only ever used serially from the audio tap callback.
 final class AudioConverter: @unchecked Sendable {
 
     static let whisperFormat = AVAudioFormat(

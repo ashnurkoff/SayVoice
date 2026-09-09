@@ -1,14 +1,14 @@
-# M5 — Полировка
+# M5 — Polish
 
-**Цель:** Feature-complete v1.0, приятный в ежедневном использовании. Настройки, история транскрипций, звуковая обратная связь, онбординг, обработка ошибок.
+**Goal:** a feature-complete v1.0 that is pleasant to use every day. Settings, the transcription history, sound feedback, onboarding, error handling.
 
-**Оценка:** 3-5 рабочих дней
-**Зависимости:** M4 завершён (полный pipeline работает)
-**Критерий готовности:** Приложение можно использовать ежедневно без открытия Xcode
+**Estimate:** 3-5 working days
+**Dependencies:** M4 finished (the full pipeline works)
+**Definition of done:** the application can be used daily without opening Xcode
 
 ---
 
-## 5a — Настройки
+## 5a — Settings
 
 ### SettingsKeys.swift
 
@@ -36,17 +36,17 @@ import Observation
 @Observable
 final class SettingsStore {
 
-    // Хоткей (keyCode + modifiers)
+    // The hotkey (keyCode + modifiers)
     var hotkeyCode: Int {
         didSet { UserDefaults.standard.set(hotkeyCode, forKey: SettingsKeys.hotkeyCode) }
     }
 
-    // Модель: "tiny" | "base" | "small"
+    // The model: "tiny" | "base" | "small"
     var modelSize: String {
         didSet { UserDefaults.standard.set(modelSize, forKey: SettingsKeys.modelSize) }
     }
 
-    // Язык: "auto" | "ru" | "en"
+    // The language: "auto" | "ru" | "en"
     var language: String {
         didSet { UserDefaults.standard.set(language, forKey: SettingsKeys.language) }
     }
@@ -111,9 +111,9 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            // MARK: - Хоткей
-            Section("Хоткей") {
-                LabeledContent("Хоткей записи") {
+            // MARK: - Hotkey
+            Section("Hotkey") {
+                LabeledContent("Recording hotkey") {
                     Button(hotkeyLabel) {
                         isRecordingHotkey.toggle()
                     }
@@ -122,71 +122,71 @@ struct SettingsView: View {
                 }
 
                 if isRecordingHotkey {
-                    Text("Нажмите клавишу для назначения...")
+                    Text("Press a key to assign it…")
                         .foregroundStyle(.secondary)
                         .font(.caption)
                 }
             }
 
-            // MARK: - Модель
-            Section("Модель распознавания") {
-                Picker("Модель", selection: Binding(
+            // MARK: - Model
+            Section("Recognition model") {
+                Picker("Model", selection: Binding(
                     get: { settings.modelSize },
                     set: { settings.modelSize = $0 }
                 )) {
-                    Text("Tiny (75 MB, быстрая, менее точная)").tag("tiny")
-                    Text("Base (142 MB, баланс)").tag("base")
-                    Text("Small (465 MB, рекомендуется)").tag("small")
+                    Text("Tiny (75 MB, fast, less accurate)").tag("tiny")
+                    Text("Base (142 MB, balanced)").tag("base")
+                    Text("Small (465 MB, recommended)").tag("small")
                 }
                 .pickerStyle(.radioGroup)
 
-                Text("Модели хранятся в ~/Library/Application Support/SayVoice/Models/")
+                Text("The models are kept in ~/Library/Application Support/SayVoice/Models/")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            // MARK: - Язык
-            Section("Язык распознавания") {
-                Picker("Язык", selection: Binding(
+            // MARK: - Language
+            Section("Recognition language") {
+                Picker("Language", selection: Binding(
                     get: { settings.language },
                     set: { settings.language = $0 }
                 )) {
-                    Text("Авто (определяется автоматически)").tag("auto")
-                    Text("Русский").tag("ru")
+                    Text("Auto (detected automatically)").tag("auto")
+                    Text("Russian").tag("ru")
                     Text("English").tag("en")
                 }
                 .pickerStyle(.radioGroup)
             }
 
-            // MARK: - Интерфейс
-            Section("Интерфейс") {
-                Toggle("Показывать overlay при записи", isOn: Binding(
+            // MARK: - Interface
+            Section("Interface") {
+                Toggle("Show the overlay while recording", isOn: Binding(
                     get: { settings.overlayEnabled },
                     set: { settings.overlayEnabled = $0 }
                 ))
 
-                Toggle("Звуковая обратная связь", isOn: Binding(
+                Toggle("Sound feedback", isOn: Binding(
                     get: { settings.soundFeedback },
                     set: { settings.soundFeedback = $0 }
                 ))
             }
 
-            // MARK: - Вставка
-            Section("Метод вставки текста") {
-                Picker("Метод", selection: Binding(
+            // MARK: - Insertion
+            Section("Text insertion method") {
+                Picker("Method", selection: Binding(
                     get: { settings.pasteMethod },
                     set: { settings.pasteMethod = $0 }
                 )) {
-                    Text("Авто (AX → Буфер обмена)").tag("auto")
-                    Text("Только AX (нативные приложения)").tag("ax")
-                    Text("Только буфер обмена (универсальный)").tag("pasteboard")
+                    Text("Auto (AX → the pasteboard)").tag("auto")
+                    Text("AX only (native applications)").tag("ax")
+                    Text("The pasteboard only (universal)").tag("pasteboard")
                 }
                 .pickerStyle(.radioGroup)
             }
 
-            // MARK: - Система
-            Section("Система") {
-                Toggle("Запускать при входе в систему", isOn: Binding(
+            // MARK: - System
+            Section("System") {
+                Toggle("Launch at login", isOn: Binding(
                     get: { settings.launchAtLogin },
                     set: { settings.launchAtLogin = $0 }
                 ))
@@ -197,7 +197,7 @@ struct SettingsView: View {
     }
 
     private var hotkeyLabel: String {
-        // В M5 реализовать красивое отображение keyCode как символа клавиши
+        // In M5, render the keyCode nicely as the symbol of the key
         settings.hotkeyCode == 61 ? "⌥ Right Option" : "KeyCode: \(settings.hotkeyCode)"
     }
 }
@@ -205,7 +205,7 @@ struct SettingsView: View {
 
 ---
 
-## 5b — История транскрипций
+## 5b — The transcription history
 
 ### TranscriptionEntry.swift
 
@@ -218,7 +218,7 @@ struct TranscriptionEntry: Codable, Identifiable {
     let date: Date
     let text: String
     let durationSeconds: Double
-    let language: String?       // "ru", "en", nil = неизвестно
+    let language: String?       // "ru", "en", nil = unknown
 }
 ```
 
@@ -244,7 +244,7 @@ final class TranscriptionHistoryStore {
     }
 
     func append(_ entry: TranscriptionEntry) {
-        entries.insert(entry, at: 0)   // новые сверху
+        entries.insert(entry, at: 0)   // the newest first
         if entries.count > maxEntries {
             entries = Array(entries.prefix(maxEntries))
         }
@@ -296,7 +296,7 @@ struct MenuBarPopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Заголовок
+            // The header
             HStack {
                 Label("SayVoice", systemImage: "waveform")
                     .font(.headline)
@@ -311,12 +311,12 @@ struct MenuBarPopoverView: View {
 
             Divider()
 
-            // История транскрипций
+            // The transcription history
             if history.entries.isEmpty {
                 VStack {
-                    Text("Нет записей")
+                    Text("No entries")
                         .foregroundStyle(.secondary)
-                    Text("Зажмите ⌥ Right Option для записи")
+                    Text("Hold ⌥ Right Option to record")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
@@ -336,10 +336,10 @@ struct MenuBarPopoverView: View {
 
             Divider()
 
-            // Нижняя панель
+            // The bottom bar
             HStack {
                 if !history.entries.isEmpty {
-                    Button("Очистить историю") {
+                    Button("Clear the history") {
                         history.clear()
                     }
                     .foregroundStyle(.red)
@@ -347,7 +347,7 @@ struct MenuBarPopoverView: View {
                     .font(.caption)
                 }
                 Spacer()
-                Button("Настройки...") {
+                Button("Settings…") {
                     onOpenSettings()
                 }
                 .buttonStyle(.plain)
@@ -375,7 +375,7 @@ struct HistoryRowView: View {
                         .foregroundStyle(.primary)
 
                     Text(entry.date, style: .relative) +
-                    Text(" · \(entry.durationSeconds, format: .number.precision(.fractionLength(1)))с")
+                    Text(" · \(entry.durationSeconds, format: .number.precision(.fractionLength(1)))s")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -406,10 +406,10 @@ struct HistoryRowView: View {
 
 ---
 
-## 5c — Звуковая обратная связь
+## 5c — Sound feedback
 
 ```swift
-// Добавить в AppCoordinator:
+// Add to AppCoordinator:
 import AppKit
 
 private func playStartSound() {
@@ -422,7 +422,7 @@ private func playStopSound() {
     NSSound(named: NSSound.Name("Pop"))?.play()
 }
 
-// Вызывать в handleStateChange:
+// Call them from handleStateChange:
 case .recording:
     playStartSound()
     // ...
@@ -432,41 +432,41 @@ case .idle where oldState == .injecting:
     // ...
 ```
 
-**Стандартные системные звуки macOS:**
-- `Tink` — тихий клик (старт записи)
-- `Pop` — мягкий хлопок (завершение)
-- `Purr` — мурчание (успех)
-- `Basso` — низкий звук (ошибка)
+**The standard macOS system sounds:**
+- `Tink` — a quiet click (the recording starts)
+- `Pop` — a soft pop (it finishes)
+- `Purr` — a purr (success)
+- `Basso` — a low sound (an error)
 
 ---
 
-## 5d — Обработка ошибок
+## 5d — Error handling
 
-### Таймаут транскрипции
+### The transcription timeout
 
-Уже реализован в `TranscriptionEngine` через `withThrowingTaskGroup` — 15 сек timeout.
+Already implemented in `TranscriptionEngine` through `withThrowingTaskGroup` — a 15 sec timeout.
 
-### Запись слишком короткая (< 0.3 сек)
+### The recording is too short (< 0.3 sec)
 
 ```swift
-// В TranscriptionEngine:
-guard samples.count >= 4800 else {  // 0.3 сек × 16000 Hz
+// In TranscriptionEngine:
+guard samples.count >= 4800 else {  // 0.3 sec × 16000 Hz
     throw TranscriptionError.recordingTooShort(samples.count)
 }
-// AppCoordinator: при .recordingTooShort → state = .idle (тихо)
+// AppCoordinator: on .recordingTooShort → state = .idle (silently)
 ```
 
-### Пустой результат whisper
+### An empty result from whisper
 
 ```swift
-// В TranscriptionEngine:
+// In TranscriptionEngine:
 if result.isEmpty {
     throw TranscriptionError.emptyResult
 }
-// AppCoordinator: overlay "Не услышал ничего" 2 сек → idle
+// AppCoordinator: the overlay "Didn't catch anything" for 2 sec → idle
 ```
 
-### Модель не скачана
+### The model is not downloaded
 
 ```swift
 // AppCoordinator:
@@ -476,20 +476,20 @@ if result.isEmpty {
 }
 ```
 
-### Таблица всех ошибок и UX-реакций
+### The table of every error and its UX response
 
-| Ошибка | Overlay текст | Время | Действие |
+| Error | The overlay text | Time | Action |
 |---|---|---|---|
-| `recordingTooShort` | — (тихо) | — | Сразу IDLE |
-| `emptyResult` | "Не услышал ничего" | 2 сек | IDLE |
-| `timeout` | "Слишком долго..." | 3 сек | IDLE |
-| `modelNotLoaded` | "Скачайте модель в настройках" | 3 сек | Открыть popover |
-| `microphonePermissionDenied` | "Нет доступа к микрофону" | 3 сек | Кнопка открыть настройки |
-| `accessibilityPermissionDenied` | "Нет доступа Accessibility" | 3 сек | Кнопка открыть настройки |
+| `recordingTooShort` | — (silence) | — | Straight to IDLE |
+| `emptyResult` | "Didn't catch anything" | 2 sec | IDLE |
+| `timeout` | "Taking too long…" | 3 sec | IDLE |
+| `modelNotLoaded` | "Download the model in the settings" | 3 sec | Open the popover |
+| `microphonePermissionDenied` | "No microphone access" | 3 sec | A button that opens the settings |
+| `accessibilityPermissionDenied` | "No Accessibility access" | 3 sec | A button that opens the settings |
 
 ---
 
-## 5e — Автозапуск при входе в систему
+## 5e — Launching at login
 
 ```swift
 // SayVoice/Settings/SettingsStore.swift
@@ -508,16 +508,16 @@ private func updateLaunchAtLogin(enabled: Bool) {
 }
 ```
 
-**Требования:**
-- macOS 13.0+ (SMAppService — новый API, замена LaunchAgents plist)
-- Приложение должно быть подписано (Developer ID)
-- Пользователь может управлять через System Settings > General > Login Items
+**Requirements:**
+- macOS 13.0+ (SMAppService — the new API that replaces a LaunchAgents plist)
+- The application has to be signed (Developer ID)
+- The user can manage it through System Settings > General > Login Items
 
 ---
 
-## 5f — Онбординг при первом запуске
+## 5f — Onboarding on the first run
 
-Последовательность экранов показывается в `MenuBarPopoverView` как `NavigationStack` или серия `sheet`.
+The sequence of screens is shown in `MenuBarPopoverView` as a `NavigationStack` or a series of `sheet`s.
 
 ### OnboardingView.swift
 
@@ -585,8 +585,8 @@ struct OnboardingView: View {
 
     private func handleAccessibilityStep() {
         permissions.requestAccessibilityPrompt()
-        // Нет callback — пользователь должен вернуться после ручного включения
-        // Показываем кнопку "Проверить" → повторная проверка
+        // There is no callback — the user has to come back after enabling it by hand
+        // We show a "Check again" button → the check runs again
     }
 
     private func startDownload() {
@@ -600,91 +600,91 @@ struct OnboardingView: View {
 }
 ```
 
-**Шаги онбординга:**
+**The onboarding steps:**
 
 ```
 ┌─────────────────────────────────────┐
-│  🎙  Доступ к микрофону             │
-│  SayVoice нужен доступ к микрофону  │
-│  для записи голоса.                 │
+│  🎙  Microphone access              │
+│  SayVoice needs microphone access   │
+│  to record your voice.              │
 │                                     │
-│         [Разрешить]                 │
+│         [Allow]                     │
 └─────────────────────────────────────┘
-            ↓ (после разрешения)
+            ↓ (once allowed)
 ┌─────────────────────────────────────┐
-│  ♿  Специальные возможности        │
-│  Нужен для глобального хоткея       │
-│  и вставки текста.                  │
+│  ♿  Accessibility                  │
+│  Needed for the global hotkey       │
+│  and for inserting the text.        │
 │                                     │
-│  [Открыть настройки]  [Проверить]   │
+│  [Open Settings]  [Check again]     │
 └─────────────────────────────────────┘
-            ↓ (после включения)
+            ↓ (once enabled)
 ┌─────────────────────────────────────┐
-│  ⬇  Модель Whisper Small            │
-│  465 MB · хорошее качество RU/EN    │
+│  ⬇  The Whisper Small model         │
+│  465 MB · good RU/EN quality        │
 │                                     │
 │  ████████░░░░  52%                  │
 │                                     │
-│         [Скачать]                   │
+│         [Download]                  │
 └─────────────────────────────────────┘
-            ↓ (после скачивания)
+            ↓ (once downloaded)
 ┌─────────────────────────────────────┐
-│  ✅  Готово!                        │
+│  ✅  Ready!                         │
 │                                     │
-│  Зажмите ⌥ Right Option             │
-│  чтобы начать запись.               │
+│  Hold ⌥ Right Option                │
+│  to start recording.                │
 │                                     │
-│         [Начать]                    │
+│         [Start]                     │
 └─────────────────────────────────────┘
 ```
 
 ---
 
-## Критерии готовности M5
+## The M5 definition of done
 
-### Настройки
-- [ ] SettingsView открывается из popover и через NSApp Settings
-- [ ] Смена хоткея применяется без перезапуска
-- [ ] Смена модели применяется при следующей транскрипции
-- [ ] Toggle "звук" работает: записываем с включённым и выключенным
-- [ ] Toggle "overlay" работает: overlay исчезает когда выключен
+### Settings
+- [ ] SettingsView opens from the popover and through NSApp Settings
+- [ ] Changing the hotkey takes effect without a restart
+- [ ] Changing the model takes effect on the next transcription
+- [ ] The "sound" toggle works: record with it on and with it off
+- [ ] The "overlay" toggle works: the overlay is gone when it is off
 
-### История
-- [ ] Popover показывает последние 10 записей
-- [ ] Клик на запись → текст скопирован, иконка меняется на ✓
-- [ ] "Очистить историю" → список пустеет
-- [ ] История сохраняется между запусками
+### History
+- [ ] The popover shows the last 10 entries
+- [ ] A click on an entry → the text is copied, the icon turns into a ✓
+- [ ] "Clear the history" → the list empties
+- [ ] The history survives between launches
 
-### Звуки
-- [ ] Старт записи → Tink
-- [ ] Конец транскрипции → Pop
-- [ ] Тихо при `recordingTooShort`
+### Sounds
+- [ ] The recording starts → Tink
+- [ ] The transcription ends → Pop
+- [ ] Silence on `recordingTooShort`
 
-### Ошибки
-- [ ] Все ошибки показывают понятное сообщение в overlay
-- [ ] После ошибки приложение возвращается в IDLE без перезапуска
-- [ ] Таймаут 15 сек работает (проверить: скормить очень длинную тишину)
+### Errors
+- [ ] Every error shows an understandable message in the overlay
+- [ ] After an error the application returns to IDLE without a restart
+- [ ] The 15 sec timeout works (check it: feed in a very long silence)
 
-### Онбординг
-- [ ] Первый запуск → открывается онбординг
-- [ ] Второй запуск (после onboarding = done) → онбординг не показывается
-- [ ] Каждый шаг онбординга работает корректно
-- [ ] После всех шагов → приложение готово к работе
+### Onboarding
+- [ ] The first run → the onboarding opens
+- [ ] The second run (with onboarding = done) → no onboarding
+- [ ] Every onboarding step works correctly
+- [ ] After all the steps → the application is ready to work
 
-### Автозапуск
-- [ ] Toggle "Запускать при входе" → появляется в System Settings > Login Items
-- [ ] После включения: выйти из системы и войти → приложение запущено
+### Launch at login
+- [ ] The "Launch at login" toggle → it appears in System Settings > Login Items
+- [ ] Once it is on: log out and back in → the application is running
 
 ---
 
-## Итоговая проверка (end-to-end)
+## The final end-to-end check
 
-1. Свежая установка → онбординг → mic + accessibility + скачивание модели
-2. Открыть TextEdit → зажать Right Option → сказать "Привет, это тест"
-3. Отпустить → overlay "Привет, это тест" → текст в TextEdit
-4. Открыть Chrome → повторить → текст вставляется через pasteboard
-5. Кликнуть на menu bar иконку → видна запись в истории → клик копирует
-6. Открыть настройки → сменить язык на "en" → проверить транскрипцию
-7. Перезапустить приложение → история сохранена
-8. Выключить звук в настройках → записать → тихо
-9. Проверить автозапуск при входе в систему
+1. A fresh install → onboarding → mic + accessibility + downloading the model
+2. Open TextEdit → hold Right Option → say a short test phrase
+3. Release → the overlay shows that phrase → the text lands in TextEdit
+4. Open Chrome → repeat → the text is inserted through the pasteboard
+5. Click the menu bar icon → the entry is visible in the history → a click copies it
+6. Open the settings → change the language to "en" → check the transcription
+7. Restart the application → the history is preserved
+8. Switch the sound off in the settings → record → silence
+9. Check the launch at login

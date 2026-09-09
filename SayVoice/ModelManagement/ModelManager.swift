@@ -44,29 +44,13 @@ final class ModelManager {
             }
         }
 
-        /// Пояснение под списком — показывается для выбранной модели.
-        var note: String {
-            switch self {
-            case .base:
-                return "Самая быстрая и лёгкая. Годится для коротких английских фраз; на русской речи ошибается заметно чаще остальных, особенно в терминах и именах."
-            case .small:
-                return "Самая экономная из пригодных для диктовки. На смешанной русско-английской речи заметно уступает Turbo — английские термины часто пишет кириллицей."
-            case .turboQ5:
-                return "Оптимальный баланс: качество почти как у полной Turbo при трети её размера. На Apple Silicon расшифровывает минуту речи за несколько секунд."
-            case .turboQ8:
-                return "Та же модель, что и Q5, но с более точным квантованием — чуть аккуратнее с редкими словами и именами. Вдвое меньше полной Turbo."
-            case .turbo:
-                return "Модель без квантования — эталон качества для этого семейства. Занимает больше всех места и дольше грузится в память после простоя."
-            }
-        }
-
         var fileName: String { "\(rawValue).bin" }
 
         var downloadURL: URL {
             URL(string: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/\(fileName)")!
         }
 
-        /// Строка для UserDefaults (см. SettingsStore.modelSize).
+        /// The string stored in UserDefaults (see SettingsStore.modelSize).
         var settingsString: String {
             switch self {
             case .base:    return "base"
@@ -77,10 +61,11 @@ final class ModelManager {
             }
         }
 
-        /// Конвертация из строки настроек в enum.
-        /// Tiny убрана из списка: на русской речи даёт кашу, а выигрыш в скорости на
-        /// Apple Silicon не нужен — Turbo Q5 расшифровывает быстрее реального времени.
-        /// Сохранённый выбор "tiny" переводим на ближайшую оставшуюся — Base.
+        /// Converts the settings string into the enum.
+        /// Tiny is gone from the list: it turns Russian speech into mush, and
+        /// its speed is not needed on Apple Silicon — Turbo Q5 transcribes
+        /// faster than real time. A stored choice of "tiny" is moved to the
+        /// nearest one left, Base.
         init?(settingsString: String) {
             switch settingsString {
             case "base":               self = .base
