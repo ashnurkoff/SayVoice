@@ -48,4 +48,24 @@ final class ComponentRenderTests: XCTestCase {
             XCTAssertEqual(s.height, DS.Size.orb + 10, accuracy: 0.5)
         }
     }
+
+    func testGlassPanelRendersBothShapes() {
+        for shape in [GlassPanel<Text>.Shape.capsule, .card] {
+            let s = renderSize(GlassPanel(shape: shape) { Text("Listening") }, width: DS.Size.overlayWidth)
+            XCTAssertEqual(s.width, DS.Size.overlayWidth, accuracy: 0.5)
+            XCTAssertGreaterThan(s.height, 30)
+        }
+    }
+
+    func testCardAndRowRender() {
+        let s = renderSize(
+            Card(title: "Recording hotkey", subtitle: "Key, combination or mouse button") {
+                SettingsRow("Show overlay", note: "Glass capsule at the bottom of the screen") { Toggle("", isOn: .constant(true)).labelsHidden() }
+                SettingsRow("Sound feedback") { Toggle("", isOn: .constant(false)).labelsHidden() }
+            },
+            width: 600
+        )
+        XCTAssertEqual(s.width, 600, accuracy: 0.5)
+        XCTAssertGreaterThan(s.height, 2 * DS.Size.settingsRow)
+    }
 }
