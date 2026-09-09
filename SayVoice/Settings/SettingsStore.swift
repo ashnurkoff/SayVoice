@@ -135,7 +135,7 @@ final class SettingsStore {
         self.hotkeyMode = d.string(forKey: SettingsKeys.hotkeyMode) ?? "hold"
 
         // String: string(forKey:) ?? default
-        self.modelSize   = d.string(forKey: SettingsKeys.modelSize) ?? "small"
+        self.modelSize   = d.string(forKey: SettingsKeys.modelSize) ?? ModelManager.ModelSize.recommended.settingsString
         self.language    = d.string(forKey: SettingsKeys.language) ?? "auto"
         self.pasteMethod = d.string(forKey: SettingsKeys.pasteMethod) ?? "pasteboard"
 

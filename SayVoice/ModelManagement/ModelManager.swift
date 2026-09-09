@@ -1,5 +1,18 @@
 import Foundation
 
+/// Progress of one model download, in bytes so consumers can compute speed
+/// and time remaining themselves.
+struct ModelDownloadProgress: Sendable, Equatable {
+    let bytesReceived: Int64
+    let totalBytes: Int64
+
+    /// 0…1; 0 while the total is unknown.
+    var fraction: Double {
+        guard totalBytes > 0 else { return 0 }
+        return min(1, Double(bytesReceived) / Double(totalBytes))
+    }
+}
+
 @MainActor
 final class ModelManager {
 
@@ -90,6 +103,22 @@ final class ModelManager {
             default: return nil
             }
         }
+
+        /// The model preselected on first run and used as the fallback when the
+        /// stored setting is unknown.
+        static let recommended: ModelSize = .turboQ5
+
+        /// Relative quality on a five-step scale, for the bar in ModelRow.
+        /// Ordered with the catalogue: lighter models first.
+        var qualitySteps: Int {
+            switch self {
+            case .base:    return 2
+            case .small:   return 3
+            case .turboQ5: return 4
+            case .turboQ8: return 5
+            case .turbo:   return 5
+            }
+        }
     }
 
     nonisolated static let modelsDirectory: URL = {
@@ -105,62 +134,78 @@ final class ModelManager {
         FileManager.default.fileExists(atPath: modelURL(for: size).path)
     }
 
-    func downloadModel(_ size: ModelSize) -> AsyncThrowingStream<Double, Error> {
-        AsyncThrowingStream { continuation in
-            Task.detached {
-                do {
-                    try FileManager.default.createDirectory(
-                        at: Self.modelsDirectory,
-                        withIntermediateDirectories: true
-                    )
+    /// Streams byte-level progress. Cancelling the consuming task stops the
+    /// transfer and removes the partial file; the stream then ends with
+    /// `CancellationError`.
+    func downloadModelProgress(_ size: ModelSize) -> AsyncThrowingStream<ModelDownloadProgress, Error> {
+        let directory = Self.modelsDirectory
+        let fileName = size.fileName
+        let url = size.downloadURL
 
-                    let (bytes, response) = try await URLSession.shared.bytes(from: size.downloadURL)
+        return AsyncThrowingStream { continuation in
+            let worker = Task.detached {
+                let tempURL = directory.appendingPathComponent(fileName + ".tmp")
+                let finalURL = directory.appendingPathComponent(fileName)
+                do {
+                    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+                    let (bytes, response) = try await URLSession.shared.bytes(from: url)
                     let totalBytes = response.expectedContentLength
 
-                    let tempURL = Self.modelsDirectory.appendingPathComponent(size.fileName + ".tmp")
                     if FileManager.default.fileExists(atPath: tempURL.path) {
                         try FileManager.default.removeItem(at: tempURL)
                     }
                     FileManager.default.createFile(atPath: tempURL.path, contents: nil)
-
                     let handle = try FileHandle(forWritingTo: tempURL)
                     defer { try? handle.close() }
 
-                    var downloadedBytes: Int64 = 0
+                    var received: Int64 = 0
                     var chunk = Data()
-                    chunk.reserveCapacity(65536)
+                    chunk.reserveCapacity(65_536)
 
                     for try await byte in bytes {
+                        // URLSession.AsyncBytes throws CancellationError here once the
+                        // task is cancelled, which is what ends the stream promptly.
                         chunk.append(byte)
-                        downloadedBytes += 1
-
-                        if chunk.count >= 65536 {
+                        received += 1
+                        if chunk.count >= 65_536 {
                             try handle.write(contentsOf: chunk)
                             chunk.removeAll(keepingCapacity: true)
-
-                            if totalBytes > 0 {
-                                continuation.yield(Double(downloadedBytes) / Double(totalBytes))
-                            }
+                            continuation.yield(ModelDownloadProgress(bytesReceived: received, totalBytes: totalBytes))
                         }
                     }
+                    if !chunk.isEmpty { try handle.write(contentsOf: chunk) }
 
-                    if !chunk.isEmpty {
-                        try handle.write(contentsOf: chunk)
-                    }
-
-                    let finalURL = Self.modelsDirectory.appendingPathComponent(size.fileName)
                     if FileManager.default.fileExists(atPath: finalURL.path) {
                         try FileManager.default.removeItem(at: finalURL)
                     }
                     try FileManager.default.moveItem(at: tempURL, to: finalURL)
-
-                    continuation.yield(1.0)
+                    continuation.yield(ModelDownloadProgress(bytesReceived: received, totalBytes: max(totalBytes, received)))
                     continuation.finish()
                     print("[SayVoice] Model downloaded: \(finalURL.path)")
+                } catch {
+                    try? FileManager.default.removeItem(at: tempURL)
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in worker.cancel() }
+        }
+    }
+
+    /// Fraction-only view of `downloadModelProgress`, kept for the onboarding
+    /// step until Phase 3 replaces it.
+    func downloadModel(_ size: ModelSize) -> AsyncThrowingStream<Double, Error> {
+        let source = downloadModelProgress(size)
+        return AsyncThrowingStream { continuation in
+            let relay = Task {
+                do {
+                    for try await p in source { continuation.yield(p.fraction) }
+                    continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
                 }
             }
+            continuation.onTermination = { _ in relay.cancel() }
         }
     }
 }

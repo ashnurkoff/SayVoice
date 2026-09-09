@@ -50,6 +50,7 @@
 		AD91AD8D3A3199835D4819D1 /* SettingsRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC905357278F8564AE990E73 /* SettingsRow.swift */; };
 		AE96698161F972BDD8456E38 /* TranscribingContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E5439859065F3EB84CF9B6 /* TranscribingContent.swift */; };
 		AF20DE9DC2DBA86D532E1D3C /* TagField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66872C593D9A534A5318E263 /* TagField.swift */; };
+		B330C821678DFDC8F1DB5E70 /* ModelCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B09F146B901F81429C02DED /* ModelCatalogTests.swift */; };
 		B7B557F0EBA0351C4177B889 /* SayVoiceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5097803D53133D9C2E6F872B /* SayVoiceApp.swift */; };
 		BB83857B2CB706E5618DE9E3 /* Hotkey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FB8B98E685AE7F256F18828 /* Hotkey.swift */; };
 		C3DCE5B9A502A94AA360667F /* SilenceTrimmer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E3BF498ACF29D15AE737B6 /* SilenceTrimmer.swift */; };
@@ -101,6 +102,7 @@
 		5DD8846E2B0AD43605E5424A /* KeyCap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyCap.swift; sourceTree = "<group>"; };
 		611A67ADB66D7C5956E104ED /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
 		66872C593D9A534A5318E263 /* TagField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagField.swift; sourceTree = "<group>"; };
+		6B09F146B901F81429C02DED /* ModelCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCatalogTests.swift; sourceTree = "<group>"; };
 		6CC9B05F53A6F68425A0D6ED /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelManager.swift; sourceTree = "<group>"; };
 		6F5C20D87FE271CE5881BA9F /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = SayVoice/Resources/Fonts; sourceTree = SOURCE_ROOT; };
 		6FB8B98E685AE7F256F18828 /* Hotkey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hotkey.swift; sourceTree = "<group>"; };
@@ -218,6 +220,7 @@
 				EAA16E63693CBD6B6818FDD9 /* DesignTokensTests.swift */,
 				390220034D196834BBB73BF8 /* FontsTests.swift */,
 				10D4F45FC49D8B1E72D923CC /* HotkeyEventDecisionTests.swift */,
+				6B09F146B901F81429C02DED /* ModelCatalogTests.swift */,
 				CA6658DA0AEAE33EAF46178C /* OverlayRenderTests.swift */,
 				79044FDD802EC1195682FE23 /* SilenceTrimmerTests.swift */,
 				75D3552B8328053EA1C8EF7E /* VocabularyTests.swift */,
@@ -538,6 +541,7 @@
 				2DCE7A21BCB9625EA921E33E /* DesignTokensTests.swift in Sources */,
 				2A297CC4784844B117B37A83 /* FontsTests.swift in Sources */,
 				256244A5CBBEB17256224333 /* HotkeyEventDecisionTests.swift in Sources */,
+				B330C821678DFDC8F1DB5E70 /* ModelCatalogTests.swift in Sources */,
 				7B81C10742379C9ADDF05442 /* OverlayRenderTests.swift in Sources */,
 				548B63087B11ACCD90BC77DC /* SilenceTrimmerTests.swift in Sources */,
 				6EC912591A6E8DEB58E5C2CB /* VocabularyTests.swift in Sources */,

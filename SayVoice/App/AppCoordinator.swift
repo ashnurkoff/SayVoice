@@ -153,7 +153,7 @@ final class AppCoordinator {
             #endif
 
             do {
-                let modelSize = ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .small
+                let modelSize = ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .recommended
                 let prompt = settingsStore.vocabularyPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
                 let text = try await transcriptionEngine.transcribe(
                     samples,
@@ -264,7 +264,7 @@ final class AppCoordinator {
             }
 
             // Step 3: Check model availability (only after mic dialog resolved)
-            let modelSize = ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .small
+            let modelSize = ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .recommended
             if !modelManager.isModelAvailable(modelSize) {
                 print("[SayVoice] Model \(modelSize.rawValue) not found — showing download window")
                 showModelDownloadWindow()
@@ -278,7 +278,7 @@ final class AppCoordinator {
         // Don't open multiple windows
         if let existing = downloadWindow, existing.isVisible { return }
 
-        let selectedModel = ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .small
+        let selectedModel = ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .recommended
         let view = ModelDownloadView(modelManager: modelManager, modelSize: selectedModel) { [weak self] in
             guard let self else { return }
             print("[SayVoice] Model download complete")
