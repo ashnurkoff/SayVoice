@@ -32,6 +32,9 @@ struct SettingsRail: View {
             Spacer(minLength: 0)
         }
         .frame(maxHeight: .infinity)
+        // The buttons make the stack only 40 pt wide; without this the rail
+        // chrome — and its trailing hairline — would float inside the 64 pt rail.
+        .frame(maxWidth: .infinity)
         .background(DS.Colors.surface2.color.opacity(0.5))
         .overlay(alignment: .trailing) { Rectangle().fill(DS.Colors.line.color).frame(width: 1) }
     }

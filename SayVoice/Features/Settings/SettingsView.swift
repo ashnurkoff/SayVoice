@@ -50,21 +50,26 @@ struct SettingsView: View {
         }
     }
 
+    #if DEBUG
     /// Test hook: fitting height of a section's content at the content width,
     /// rendered on its own so the window frame cannot mask an overflow.
+    /// Mirrors `body`'s column exactly — trailing `Spacer` included, since it
+    /// costs one more `DS.Space.s20` gap.
     static func measuredContentHeight(for section: SettingsSection, hosting: NSHostingView<SettingsView>) -> CGFloat {
         let root = hosting.rootView
         let probe = NSHostingView(rootView: AnyView(
             VStack(alignment: .leading, spacing: DS.Space.s20) {
                 SectionHeader(section: section, status: root.status)
                 root.sectionContent(section)
+                Spacer(minLength: 0)
             }
             .padding(contentPadding)
-            .frame(width: windowSize.width - railWidth)
+            .frame(width: contentWidth + 2 * contentPadding)
         ))
         probe.appearance = hosting.appearance
         return probe.fittingSize.height
     }
+    #endif
 }
 
 /// Temporary stand-in while sections land one by one.
