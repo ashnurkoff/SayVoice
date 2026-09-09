@@ -1,4 +1,4 @@
-# Артефакты сборки
+# Build artefacts
 build/
 DerivedData/
 *.o
@@ -9,17 +9,21 @@ xcuserdata/
 *.xcuserstate
 *.xcscmblueprint
 
+# The Xcode project is generated from project.yml by XcodeGen — run
+# `xcodegen generate` after cloning or after adding files.
+SayVoice.xcodeproj/
+
 # macOS
 .DS_Store
 
-# Модели whisper не хранятся в репозитории: они весят сотни мегабайт
-# и скачиваются приложением при первом запуске.
+# Whisper models are not stored in the repository: they weigh hundreds of
+# megabytes and the app downloads them on first run.
 *.bin
 
-# Локальные настройки Claude Code
+# Local Claude Code settings
 .claude/settings.local.json
 
-# Конфиг локального превью — привязан к сессии, не для репозитория
+# Local preview config — tied to the session, not to the repository
 .claude/launch.json
 
 # Subagent-driven-development scratch (ledgers, briefs, reports)
