@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Окно настроек приложения.
 /// Использует `@Bindable` (macOS 14+) для двустороннего binding к `@Observable` SettingsStore.
-struct SettingsView: View {
+struct LegacySettingsView: View {
     @Bindable var settings: SettingsStore
     /// Нужен, чтобы показать, какие модели уже загружены.
     var modelManager: ModelManager?

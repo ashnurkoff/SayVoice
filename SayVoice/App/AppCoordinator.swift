@@ -315,7 +315,7 @@ final class AppCoordinator {
             return
         }
 
-        let view = SettingsView(
+        let view = LegacySettingsView(
             settings: settingsStore,
             modelManager: modelManager,
             onHotkeyChanged: { [weak self] hotkey in self?.hotkeyListener?.apply(hotkey) },
