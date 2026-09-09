@@ -7,7 +7,7 @@
 // Left half: the brand gradient panel (accent -> accent2) with the white
 // "SayVoice" wordmark (no glyph — the app icon already carries the waveform). Right half: the dark ground with
 // a curved arrow running from the left icon slot to the right one and the
-// caption. Icon slots sit at (165, 210) and (495, 210) in window points, which
+// caption. Icon slots sit at (165, 185) and (495, 185) in window points, which
 // is what Scripts/make-dmg tells Finder.
 //
 // Colours are the dark-theme values of the design-system tokens in
@@ -33,8 +33,8 @@ let scale: CGFloat = 2
 /// in) to CoreGraphics points (bottom-left origin).
 func flip(_ y: CGFloat) -> CGFloat { canvasHeight - y }
 
-let leftSlot = CGPoint(x: 165, y: 210)
-let rightSlot = CGPoint(x: 495, y: 210)
+let leftSlot = CGPoint(x: 165, y: 185)
+let rightSlot = CGPoint(x: 495, y: 185)
 let panelWidth = leftSlot.x * 2  // 330: the split falls between the two slots
 
 // MARK: - Tokens (DS.Colors, dark appearance)
@@ -133,19 +133,17 @@ context.scaleBy(x: scale, y: scale)
 context.setAllowsAntialiasing(true)
 context.interpolationQuality = .high
 
-// The dark ground fills the canvas; the gradient panel is painted over its left half.
-context.setFillColor(ground)
-context.fill(CGRect(x: 0, y: 0, width: canvasWidth, height: canvasHeight))
+// The brand gradient fills the whole canvas.
 
 if let gradient = CGGradient(
     colorsSpace: sRGB, colors: [accent, accent2] as CFArray, locations: [0, 1]
 ) {
     context.saveGState()
-    context.clip(to: CGRect(x: 0, y: 0, width: panelWidth, height: canvasHeight))
+    context.clip(to: CGRect(x: 0, y: 0, width: canvasWidth, height: canvasHeight))
     context.drawLinearGradient(
         gradient,
         start: CGPoint(x: 0, y: canvasHeight),
-        end: CGPoint(x: panelWidth, y: 0),
+        end: CGPoint(x: canvasWidth, y: 0),
         options: []
     )
     context.restoreGState()
@@ -227,29 +225,28 @@ func run(_ text: String, _ font: CTFont, _ colour: CGColor, tracking: CGFloat = 
 
 drawCentred(
     run("SayVoice", brandFont(size: 32, weight: 600), onAccent, tracking: -0.3),
-    x: leftSlot.x,
-    baseline: 356
+    x: canvasWidth / 2,
+    baseline: 64
 )
 
 let caption = NSMutableAttributedString()
 let captionFont = brandFont(size: 15, weight: 400)
-caption.append(run("Drag ", captionFont, mutedColor, tracking: 0.2))
-caption.append(run("SayVoice", captionFont, textColor, tracking: 0.2))
-caption.append(run(" to Applications", captionFont, mutedColor, tracking: 0.2))
-// Baseline-aligned with the wordmark, so the two read as one footer line.
-drawCentred(caption, x: rightSlot.x, baseline: 356)
+caption.append(run("Drag ", captionFont, onAccent.copy(alpha: 0.72) ?? onAccent, tracking: 0.2))
+caption.append(run("SayVoice", captionFont, onAccent, tracking: 0.2))
+caption.append(run(" to Applications", captionFont, onAccent.copy(alpha: 0.72) ?? onAccent, tracking: 0.2))
+drawCentred(caption, x: canvasWidth / 2, baseline: 338)
 
 // MARK: - Arrow
 
 // It runs between the two icon slots and sits below their vertical centre, so a
 // 128 pt icon at either end never covers it. Window points, converted on the way in.
-let arrowStart = CGPoint(x: 240, y: flip(248))
-let arrowEnd = CGPoint(x: 420, y: flip(248))
-let control1 = CGPoint(x: 300, y: flip(266))
-let control2 = CGPoint(x: 360, y: flip(266))
+let arrowStart = CGPoint(x: 240, y: flip(214))
+let arrowEnd = CGPoint(x: 420, y: flip(214))
+let control1 = CGPoint(x: 300, y: flip(232))
+let control2 = CGPoint(x: 360, y: flip(232))
 
 context.saveGState()
-context.setStrokeColor(mutedColor.copy(alpha: 0.6) ?? mutedColor)
+context.setStrokeColor(onAccent.copy(alpha: 0.7) ?? onAccent)
 context.setLineWidth(4.5)
 context.setLineCap(.round)
 context.setLineJoin(.round)
