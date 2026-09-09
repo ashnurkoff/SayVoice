@@ -134,40 +134,63 @@ final class ComponentRenderTests: XCTestCase {
         }
     }
 
-    func testModelRowRendersSelectedDownloadedAndDownloading() {
-        // (isSelected, isDownloaded, isHighlighted, download)
-        let variants: [(Bool, Bool, Bool, DownloadState?)] = [
-            (true, true, false, nil),
-            (false, false, false, .idle),
-            (false, false, false, .running(fraction: 0.6, bytesPerSecond: 8_000_000, secondsLeft: 20)),
-            (false, false, false, .failed("Timed out")),
-            // The coordinator highlights the selected model when it is missing.
-            (true, false, true, .idle),
-        ]
-        for (selected, downloaded, highlighted, download) in variants {
-            for dark in [true, false] {
-                let s = renderSize(modelRow(selected: selected, downloaded: downloaded, highlighted: highlighted, download: download),
-                                   width: 640, dark: dark)
+    /// The row is two columns and, until a transfer starts, two lines: the
+    /// Download button and the "Downloaded" mark share the right column with
+    /// the size (owner's second round, item 11 and its addendum). Only a
+    /// running or failed transfer adds the full-width line.
+    func testModelRowIsTwoLinesUntilATransferStarts() {
+        let running = DownloadState.running(fraction: 0.6, bytesPerSecond: 8_000_000, secondsLeft: 20)
+        for dark in [true, false] {
+            let note = ModelManager.ModelSize.turboQ5.purpose
+            let downloaded = renderSize(modelRow(note: note, selected: true, downloaded: true, highlighted: false, download: nil),
+                                        width: 640, dark: dark)
+            let offered = renderSize(modelRow(note: note, selected: false, downloaded: false, highlighted: false, download: .idle),
+                                     width: 640, dark: dark)
+            let transferring = renderSize(modelRow(note: note, selected: false, downloaded: false, highlighted: false, download: running),
+                                          width: 640, dark: dark)
+            let failed = renderSize(modelRow(note: note, selected: false, downloaded: false, highlighted: false, download: .failed("Timed out")),
+                                    width: 640, dark: dark)
+
+            for s in [downloaded, offered, transferring, failed] {
                 XCTAssertEqual(s.width, 640, accuracy: 0.5)
-                // One line without a download, two with it — compared against the
-                // other variant rather than against a magic number, and bounded
-                // on both sides so a runaway second line also fails.
-                let oneLine = renderSize(modelRow(selected: selected, downloaded: downloaded, highlighted: highlighted, download: nil),
-                                         width: 640, dark: dark)
-                XCTAssertGreaterThan(oneLine.height, DS.Size.settingsRow / 2)
-                XCTAssertLessThan(oneLine.height, DS.Size.settingsRow)
-                if download == nil {
-                    XCTAssertEqual(s.height, oneLine.height, accuracy: 0.5)
-                } else {
-                    XCTAssertGreaterThan(s.height, oneLine.height, "the download line adds no height")
-                    XCTAssertLessThan(s.height, oneLine.height + 80, "the download line is unexpectedly tall")
-                }
             }
+            XCTAssertLessThanOrEqual(downloaded.height, Self.twoLineRowCap,
+                                     "a downloaded row is \(downloaded.height) pt — taller than two lines")
+            XCTAssertLessThanOrEqual(offered.height, Self.twoLineRowCap,
+                                     "the Download button took a line of its own (\(offered.height) pt)")
+            XCTAssertGreaterThan(transferring.height, offered.height + 20, "the transfer line adds no height")
+            XCTAssertGreaterThan(failed.height, offered.height, "the failure line adds no height")
+            XCTAssertLessThan(transferring.height, offered.height + 80, "the transfer line is unexpectedly tall")
         }
     }
 
-    /// The purpose note sits under the name on a line of its own, and wraps
-    /// rather than truncates when the row is narrow.
+    /// Two lines of text on the left, and on the right the size, the quality
+    /// dots and one status control. Measured, not chosen: the tallest such row
+    /// — the one offering a `.dsPrimary` Download button — is 73 pt.
+    private static let twoLineRowCap: CGFloat = 78
+
+    /// The highlighted state (the selected model missing from disk) renders at
+    /// the same size as the plain one: it differs by a border colour only.
+    func testModelRowHighlightCostsNoLayout() {
+        for dark in [true, false] {
+            let plain = renderSize(modelRow(selected: true, downloaded: false, highlighted: false, download: .idle), width: 640, dark: dark)
+            let highlighted = renderSize(modelRow(selected: true, downloaded: false, highlighted: true, download: .idle), width: 640, dark: dark)
+            XCTAssertEqual(highlighted.height, plain.height, accuracy: 0.5)
+        }
+    }
+
+    /// Without the quality dots — the onboarding pane — the row is shorter.
+    func testModelRowWithoutTheQualityBarIsShorter() {
+        let note = ModelManager.ModelSize.turboQ5.purpose
+        let withBar = renderSize(modelRow(note: note, selected: false, downloaded: true, highlighted: false, download: nil), width: 640)
+        let without = renderSize(modelRow(note: note, selected: false, downloaded: true, highlighted: false, download: nil, qualityBar: false), width: 640)
+        XCTAssertLessThanOrEqual(without.height, withBar.height)
+    }
+
+    /// The purpose note sits under the name in the left column, and wraps
+    /// rather than truncates when that column is narrow. Both baselines are
+    /// measured without a download: with one, the right column is the taller
+    /// of the two and the note's own height stops showing up in the total.
     func testModelRowShowsAWrappingPurposeNote() {
         for dark in [true, false] {
             let plain = renderSize(modelRow(selected: false, downloaded: false, highlighted: false, download: nil),
@@ -185,12 +208,12 @@ final class ComponentRenderTests: XCTestCase {
                                     width: 320, dark: dark)
             let narrowPlain = renderSize(modelRow(selected: false, downloaded: false, highlighted: false, download: nil),
                                          width: 320, dark: dark)
-            XCTAssertGreaterThan(narrow.height, narrowPlain.height + 20, "the note truncated instead of wrapping")
+            XCTAssertGreaterThan(narrow.height, narrowPlain.height + 24, "the note truncated instead of wrapping")
         }
     }
 
-    /// A long name must not push the size chip off the row: it is clamped to
-    /// one line and truncated instead.
+    /// A long name must not push the size off the row: it is clamped to one
+    /// line and truncated instead.
     func testModelRowKeepsALongNameOnOneLine() {
         let short = renderSize(modelRow(selected: false, downloaded: false, highlighted: false, download: nil), width: 640)
         let long = renderSize(modelRow(name: String(repeating: "Large Turbo Q5 ", count: 8),
@@ -199,9 +222,11 @@ final class ComponentRenderTests: XCTestCase {
     }
 
     private func modelRow(name: String = "Large Turbo Q5", note: String? = nil,
-                          selected: Bool, downloaded: Bool, highlighted: Bool, download: DownloadState?) -> ModelRow {
-        ModelRow(name: name, note: note, badge: "recommended", badgeIsAccent: true, qualitySteps: 4, sizeText: "574 MB",
-                 isSelected: selected, isDownloaded: downloaded, isHighlighted: highlighted, download: download,
+                          selected: Bool, downloaded: Bool, highlighted: Bool, download: DownloadState?,
+                          qualityBar: Bool = true) -> ModelRow {
+        ModelRow(name: name, note: note, badge: "Recommended", badgeIsAccent: true, qualitySteps: 4, sizeText: "574 MB",
+                 isSelected: selected, isDownloaded: downloaded, isHighlighted: highlighted,
+                 showsQualityBar: qualityBar, download: download,
                  onSelect: {}, onDownload: {}, onCancel: {}, onRetry: {})
     }
 

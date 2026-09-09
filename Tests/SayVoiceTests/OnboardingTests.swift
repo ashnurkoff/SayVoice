@@ -140,7 +140,7 @@ final class OnboardingTests: XCTestCase {
 
     // MARK: - Fitting size measured on the step pane itself
 
-    /// The window's fixed 640 × 360 frame reports itself as the fitting size no
+    /// The window's fixed 640 × 540 frame reports itself as the fitting size no
     /// matter how far a step overflows, so the pane is measured on its own — the
     /// same trick `SettingsView.measuredContentHeight` uses. Models are read from
     /// an empty directory and the permissions are ungranted as well as granted:
@@ -264,7 +264,7 @@ final class OnboardingTests: XCTestCase {
                     // what must not be squeezed.
                     let row = ModelRow(
                         name: size.displayName,
-                        badge: size == .recommended ? "recommended" : nil,
+                        badge: size == .recommended ? "Recommended" : nil,
                         badgeIsAccent: size == .recommended,
                         qualitySteps: size.qualitySteps,
                         sizeText: size.sizeText,

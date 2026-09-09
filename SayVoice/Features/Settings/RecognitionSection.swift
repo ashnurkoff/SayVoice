@@ -51,7 +51,7 @@ struct RecognitionSection: View {
                     ModelRow(
                         name: model.displayName,
                         note: model.purpose,
-                        badge: model == .recommended ? "recommended" : nil,
+                        badge: model == .recommended ? "Recommended" : nil,
                         badgeIsAccent: model == .recommended,
                         qualitySteps: model.qualitySteps,
                         sizeText: model.sizeText,

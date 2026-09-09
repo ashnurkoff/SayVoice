@@ -15,7 +15,7 @@ struct ModelStep: View {
                     ModelRow(
                         name: size.displayName,
                         note: size.purpose,
-                        badge: size == .recommended ? "recommended" : nil,
+                        badge: size == .recommended ? "Recommended" : nil,
                         badgeIsAccent: size == .recommended,
                         qualitySteps: size.qualitySteps,
                         sizeText: size.sizeText,
@@ -25,8 +25,9 @@ struct ModelStep: View {
                         // it is not on disk yet" — the same signal Settings
                         // shows when transcription finds the model missing.
                         isHighlighted: isSelected && !isDownloaded,
-                        // The onboarding pane leaves no room for the bar next to
-                        // the name and the chips; Settings keeps it.
+                        // The onboarding pane is 400 pt wide, and the note
+                        // under the name needs every point of it; Settings
+                        // keeps the dots.
                         showsQualityBar: false,
                         // Five rows, five notes, a download line and a footer:
                         // the pane pays for every point of row padding.
