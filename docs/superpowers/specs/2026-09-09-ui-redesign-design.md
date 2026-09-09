@@ -105,7 +105,7 @@ Rule of boundaries: a component knows nothing about `SettingsStore`, `ModelManag
 | `DownloadProgress` | Progress, speed, remaining, cancel, retry — one implementation for settings and onboarding | `DownloadProgress(state: .idle/.running(progress,bytesPerSec)/.failed(msg)/.done, onStart:onCancel:onRetry:)` |
 | `Waveform` | Live bars driven by level history; keeps the existing `BarEngine` smoothing | `Waveform(levels: [Float], bars: Int, tint:)` |
 | `TagField` | Existing chip editor, restyled to tokens | unchanged API |
-| `HotkeyRecorder` | Existing recorder, restyled; label moves into a `SettingsRow` | unchanged API |
+| `HotkeyRecorder` | Existing recorder, restyled; lives in Features/Settings/ because it depends on the Hotkey domain type | unchanged API |
 | `EmptyState` | Icon + title + hint for empty history | `EmptyState(icon:title:hint:)` |
 | Buttons | System `Button` styles with token colours: `.primary`, `.secondary`, `.link`, `.destructive` | `ButtonStyle` extensions |
 

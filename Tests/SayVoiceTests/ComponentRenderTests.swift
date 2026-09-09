@@ -99,4 +99,10 @@ final class ComponentRenderTests: XCTestCase {
             }
         }
     }
+
+    func testTagFieldRendersWithChips() {
+        let s = renderSize(TagField(text: .constant("API, deployment, SwiftUI"), placeholder: "Add term"), width: 480)
+        XCTAssertEqual(s.width, 480, accuracy: 0.5)
+        XCTAssertGreaterThan(s.height, 30)
+    }
 }

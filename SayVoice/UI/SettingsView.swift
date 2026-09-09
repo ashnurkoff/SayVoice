@@ -14,7 +14,7 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Хоткей") {
-                HotkeyRecorderField(hotkey: $settings.hotkey, onChange: onHotkeyChanged)
+                HotkeyRecorder(hotkey: $settings.hotkey, onChange: onHotkeyChanged)
 
                 Picker("Режим", selection: $settings.hotkeyMode) {
                     Text("Удержание").tag("hold")
