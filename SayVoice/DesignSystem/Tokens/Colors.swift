@@ -79,5 +79,7 @@ extension DS {
         static let glassFill      = DSColor(dark: 0x202029, light: 0xFFFFFF, darkAlpha: 0.62, lightAlpha: 0.62)
         static let glassLine      = DSColor(dark: 0x7B7FF2, light: 0x5B5FD6, darkAlpha: 0.28, lightAlpha: 0.30)
         static let glassHighlight = DSColor(dark: 0xFFFFFF, light: 0xFFFFFF, darkAlpha: 0.22, lightAlpha: 0.95)
+        // Overlay drop shadow: indigo-tinted on dark, plain on light
+        static let glassShadow    = DSColor(dark: 0x281E78, light: 0x000000, darkAlpha: 0.35, lightAlpha: 0.18)
     }
 }

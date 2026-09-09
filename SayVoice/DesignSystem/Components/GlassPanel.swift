@@ -30,7 +30,7 @@ struct GlassPanel<Content: View>: View {
                     )
                     .mask(alignment: .top) { Rectangle().frame(height: 2) }
             }
-            .shadow(color: Color(red: 0.16, green: 0.12, blue: 0.47).opacity(0.35), radius: 25, x: 0, y: 20)
+            .shadow(color: DS.Colors.glassShadow.color, radius: 25, x: 0, y: 20)
     }
 
     private var clipShape: AnyInsettableShape {

@@ -417,6 +417,8 @@ extension DS {
         static let glassFill      = DSColor(dark: 0x202029, light: 0xFFFFFF, darkAlpha: 0.62, lightAlpha: 0.62)
         static let glassLine      = DSColor(dark: 0x7B7FF2, light: 0x5B5FD6, darkAlpha: 0.28, lightAlpha: 0.30)
         static let glassHighlight = DSColor(dark: 0xFFFFFF, light: 0xFFFFFF, darkAlpha: 0.22, lightAlpha: 0.95)
+        // Overlay drop shadow: indigo-tinted on dark, plain on light
+        static let glassShadow    = DSColor(dark: 0x281E78, light: 0x000000, darkAlpha: 0.35, lightAlpha: 0.18)
     }
 }
 ```
@@ -1154,7 +1156,7 @@ git commit -m "Add Orb state indicator with pulse and breath motion"
 ```swift
     func testGlassPanelRendersBothShapes() {
         for shape in [GlassPanel<Text>.Shape.capsule, .card] {
-            let s = renderSize(GlassPanel(shape: shape) { Text("Listening") }, width: DS.Size.overlayWidth)
+            let s = renderSize(GlassPanel(shape: shape) { Text("Listening") })
             XCTAssertEqual(s.width, DS.Size.overlayWidth, accuracy: 0.5)
             XCTAssertGreaterThan(s.height, 30)
         }
@@ -1210,7 +1212,7 @@ struct GlassPanel<Content: View>: View {
                     )
                     .mask(Rectangle().frame(height: 2), alignment: .top)
             }
-            .shadow(color: Color(red: 0.16, green: 0.12, blue: 0.47).opacity(0.35), radius: 25, x: 0, y: 20)
+            .shadow(color: DS.Colors.glassShadow.color, radius: 25, x: 0, y: 20)
     }
 
     private var clipShape: AnyInsettableShape {

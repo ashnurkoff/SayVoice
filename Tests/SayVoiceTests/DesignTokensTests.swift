@@ -25,6 +25,13 @@ final class DesignTokensTests: XCTestCase {
         XCTAssertEqual(dark.redComponent, 1.0, accuracy: 0.001)
     }
 
+    func testGlassShadowIsAppearanceAware() {
+        let dark = DS.Colors.glassShadow.resolved(for: NSAppearance(named: .darkAqua)!).usingColorSpace(.sRGB)!
+        XCTAssertEqual(dark.alphaComponent, 0.35, accuracy: 0.005)
+        let light = DS.Colors.glassShadow.resolved(for: NSAppearance(named: .aqua)!).usingColorSpace(.sRGB)!
+        XCTAssertEqual(light.alphaComponent, 0.18, accuracy: 0.005)
+    }
+
     func testFontsUseBundledFacesWhenAvailable() {
         XCTAssertTrue(DS.Typography.isOnestAvailable)
         XCTAssertTrue(DS.Typography.isMonoAvailable)

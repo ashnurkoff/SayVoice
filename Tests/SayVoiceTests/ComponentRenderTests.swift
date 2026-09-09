@@ -51,7 +51,7 @@ final class ComponentRenderTests: XCTestCase {
 
     func testGlassPanelRendersBothShapes() {
         for shape in [GlassPanel<Text>.Shape.capsule, .card] {
-            let s = renderSize(GlassPanel(shape: shape) { Text("Listening") }, width: DS.Size.overlayWidth)
+            let s = renderSize(GlassPanel(shape: shape) { Text("Listening") })
             XCTAssertEqual(s.width, DS.Size.overlayWidth, accuracy: 0.5)
             XCTAssertGreaterThan(s.height, 30)
         }

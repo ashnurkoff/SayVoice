@@ -50,6 +50,7 @@ Every role has a dark and a light value. Components never use literals — only 
 | `glassFill` | surface 62% | white 62% | Overlay body |
 | `glassLine` | accent 28% | accent 30% | Overlay border |
 | `glassHighlight` | white 22% | white 95% | 1px inner top highlight on glass |
+| `glassShadow` | #281E78 35% | black 18% | Overlay drop shadow |
 
 **Three-places rule.** `accent` appears only as: (1) the orb and the logo, (2) the active control — selected row, on-state toggle, focused field border, (3) the glass border of the overlay. Headings, section icons, badges and body text are neutral. Semantic colours (`rec`, `ok`, `warn`) are not the accent and do not count against the rule.
 
