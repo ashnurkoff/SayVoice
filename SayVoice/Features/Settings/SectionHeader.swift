@@ -44,5 +44,7 @@ struct StatusPill: View {
         .background(Capsule().fill(DS.Colors.surface.color))
         .overlay(Capsule().strokeBorder(DS.Colors.line.color, lineWidth: 1))
         .accessibilityElement(children: .combine)
+        // The compact pill drops the model name on screen, never for VoiceOver.
+        .accessibilityLabel(status.pillText)
     }
 }

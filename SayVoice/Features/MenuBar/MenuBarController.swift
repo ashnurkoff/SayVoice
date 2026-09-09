@@ -102,7 +102,12 @@ final class MenuBarController {
 
     private func refreshPopoverContent() {
         guard popover.isShown else { return }
-        popover.contentViewController = NSHostingController(rootView: makeContent())
+        let controller = NSHostingController(rootView: makeContent())
+        // A shown popover keeps the size it was opened with, so after Clear the
+        // shorter list would sit in the old frame. Letting the hosting
+        // controller publish its preferred size makes the popover follow.
+        controller.sizingOptions = .preferredContentSize
+        popover.contentViewController = controller
     }
 
     private func makeContent() -> HistoryPopover {

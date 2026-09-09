@@ -194,8 +194,12 @@ final class AppCoordinator {
                             NSPasteboard.general.setString(text, forType: .string)
                         },
                         onShowAll: { [weak self] in
-                            self?.overlayController?.dismiss()
-                            self?.menuBarController?.showHistory()
+                            // A tap in the window between `.injecting` and the
+                            // paste would activate this app and steal the focus
+                            // from the target the text is about to go into.
+                            guard let self, self.state != .injecting else { return }
+                            self.overlayController?.dismiss()
+                            self.menuBarController?.showHistory()
                         }
                     )
                 }
@@ -349,7 +353,9 @@ final class AppCoordinator {
         let window = AppWindow.make(title: "Welcome to SayVoice", size: OnboardingView.windowSize, content: view)
         // Closing the window from its own close button skips every step's
         // onDisappear, and the permission poll must not outlive it. Filtered by
-        // `object`, so only this window counts.
+        // `object`, so only this window counts. A second call would otherwise
+        // leak the first token, so it is dropped before the new one is made.
+        removeOnboardingCloseObserver()
         onboardingCloseObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification, object: window, queue: .main
         ) { [weak self] _ in
