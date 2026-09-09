@@ -303,6 +303,94 @@ final class OnboardingTests: XCTestCase {
         XCTAssertNotEqual(changed, standard, "the sentence must follow the setting")
     }
 
+    /// Item 12 of the owner's second round, measured on the rendered pane
+    /// rather than asserted about the source: the mark sits above the title,
+    /// both are centred in the pane, and Start is still hard against the
+    /// bottom-right margin.
+    func testDoneStepIsACentredColumnWithStartBottomRight() throws {
+        let model = makeFirstRunModel(granted: true)
+        model.step = .done
+        let width = OnboardingView.stepWidth
+        let height = OnboardingView.windowSize.height
+
+        for dark in [true, false] {
+            let appearance = try XCTUnwrap(NSAppearance(named: dark ? .darkAqua : .aqua))
+            let host = NSHostingView(rootView: AnyView(
+                DoneStep(model: model)
+                    .frame(width: width, height: height)
+                    .background(DS.Colors.ground.color)
+            ))
+            host.appearance = appearance
+            host.frame = CGRect(origin: .zero, size: NSSize(width: width, height: height))
+            host.layoutSubtreeIfNeeded()
+            let rep = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: rep)
+            let ground = try XCTUnwrap(DS.Colors.ground.resolved(for: appearance).usingColorSpace(.sRGB))
+            let scale = CGFloat(rep.pixelsWide) / width
+            let theme = dark ? "dark" : "light"
+
+            /// Left- and right-most point of anything drawn on one row.
+            func ink(row y: Int) -> (left: CGFloat, right: CGFloat)? {
+                var first: Int?
+                var last: Int?
+                for px in 0..<rep.pixelsWide {
+                    guard let c = rep.colorAt(x: px, y: Int(CGFloat(y) * scale))?.usingColorSpace(.sRGB) else { continue }
+                    let differs = abs(c.redComponent - ground.redComponent) > 0.02
+                        || abs(c.greenComponent - ground.greenComponent) > 0.02
+                        || abs(c.blueComponent - ground.blueComponent) > 0.02
+                    if differs {
+                        if first == nil { first = px }
+                        last = px
+                    }
+                }
+                guard let f = first, let l = last else { return nil }
+                return (CGFloat(f) / scale, CGFloat(l) / scale)
+            }
+
+            /// Union of the ink on a band of rows, ignoring the empty ones.
+            func box(rows: [Int]) -> (left: CGFloat, right: CGFloat)? {
+                let spans = rows.compactMap(ink(row:))
+                guard let first = spans.first else { return nil }
+                return spans.dropFirst().reduce(first) { (min($0.left, $1.left), max($0.right, $1.right)) }
+            }
+
+            // Everything above the footer band, split into the runs of rows
+            // that carry ink: the mark, then the title with its sentence.
+            let column = Array(1..<Int(height) - 70)
+            var runs: [[Int]] = []
+            for y in column {
+                if ink(row: y) != nil {
+                    if var last = runs.last, let end = last.last, end == y - 1 {
+                        last.append(y); runs[runs.count - 1] = last
+                    } else {
+                        runs.append([y])
+                    }
+                }
+            }
+            XCTAssertGreaterThanOrEqual(runs.count, 2, "[\(theme)] expected a mark and a title, found \(runs.count) blocks of ink")
+
+            let mark = try XCTUnwrap(box(rows: runs[0]), "[\(theme)] no mark")
+            let markHeight = CGFloat(runs[0].count)
+            XCTAssertEqual(mark.right - mark.left, 72, accuracy: 24, "[\(theme)] the first block is not the 72 pt mark")
+            XCTAssertEqual(markHeight, 72, accuracy: 24, "[\(theme)] the first block is not the 72 pt mark")
+            XCTAssertEqual((mark.left + mark.right) / 2, width / 2, accuracy: 6,
+                           "[\(theme)] the mark is not centred (\(mark.left)…\(mark.right) of \(width))")
+
+            // The title is the top of the second block — the mark is above it.
+            let title = try XCTUnwrap(box(rows: Array(runs[1].prefix(20))), "[\(theme)] no title under the mark")
+            XCTAssertLessThan(runs[0].last ?? 0, runs[1].first ?? 0, "[\(theme)] the mark is not above the title")
+            XCTAssertEqual((title.left + title.right) / 2, width / 2, accuracy: 12,
+                           "[\(theme)] the title is not centred (\(title.left)…\(title.right) of \(width))")
+            XCTAssertGreaterThan(title.left, 40, "[\(theme)] the title still starts at the leading margin")
+
+            // …and Start is where it always was: bottom-right.
+            let footer = try XCTUnwrap(box(rows: Array(Int(height) - 60..<Int(height) - 12)), "[\(theme)] no footer button")
+            XCTAssertGreaterThan(footer.left, width / 2, "[\(theme)] Start is not on the right")
+            XCTAssertEqual(footer.right, width - DS.Space.s20, accuracy: 4,
+                           "[\(theme)] Start is \(width - footer.right) pt from the trailing margin")
+        }
+    }
+
     private func assertFits(_ step: OnboardingStep, of model: OnboardingModel, dark: Bool, note: String,
                             file: StaticString = #filePath, line: UInt = #line) {
         let view = OnboardingView(model: model, onHotkeyChanged: nil, onHotkeyModeChanged: nil)
