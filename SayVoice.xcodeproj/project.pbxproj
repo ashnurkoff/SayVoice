@@ -11,11 +11,13 @@
 		0CACE322238F109BA2D8064F /* TranscriptionError.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF306C3B5CCA9004B9A0C390 /* TranscriptionError.swift */; };
 		0EBC813693DEF5B22D12CB71 /* HotkeyRecorderField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 891E81B865C00932FB9DC88B /* HotkeyRecorderField.swift */; };
 		135DEAB01BC087CA60A4ADCF /* AudioError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DFA25AA63E0C18ED058FF81 /* AudioError.swift */; };
+		13A126F681EFAA2E3C2D889D /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = 6F5C20D87FE271CE5881BA9F /* Fonts */; };
 		1569C48BE859342ADB1A8BCB /* PasteboardInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E3EE5521FFDDE6F40F6DEF5 /* PasteboardInjector.swift */; };
 		166EB1C971211F0161C51B80 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2B1C73EC2488CF69B7F1907E /* Assets.xcassets */; };
 		19457481F83B63E76EE51D26 /* TranscriptionHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFEDFC408C13DBE86405472 /* TranscriptionHistoryStore.swift */; };
 		1C9D2D57044CD6791BC94AB1 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0674CBA47DA797EF8EFF2DC /* PermissionManager.swift */; };
 		2548910912D313F488467F64 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6C93026BB9AE691B7FC7209 /* SettingsView.swift */; };
+		2A297CC4784844B117B37A83 /* FontsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 390220034D196834BBB73BF8 /* FontsTests.swift */; };
 		45D29304D548463A47481F2B /* HotkeyListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C6D1846F6A89D7FEE29D26 /* HotkeyListener.swift */; };
 		46142A0459E73A5A3731C85E /* TextInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 435EA3FEEB95FDAC451A3F5A /* TextInjector.swift */; };
 		5457024F20E87B91216F1B74 /* AudioConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEAEC90B08A62BFFC4312CF2 /* AudioConverter.swift */; };
@@ -42,12 +44,23 @@
 		F1F5068207284C877BE31443 /* SettingsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE3E78B5078DB6EA1AB3B60 /* SettingsKeys.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		2D373282A04C6CE09BFAAD00 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F5CDAC7D07A8012C9EA90A46 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 16AFC44C26B107EE9C96BA02;
+			remoteInfo = SayVoice;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		03F7A9ADE4B1E354F14E0F16 /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		0AD5E2802B500CCC9890B58A /* SayVoice.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SayVoice.entitlements; sourceTree = "<group>"; };
 		0CE3E78B5078DB6EA1AB3B60 /* SettingsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsKeys.swift; sourceTree = "<group>"; };
 		0FFEDFC408C13DBE86405472 /* TranscriptionHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionHistoryStore.swift; sourceTree = "<group>"; };
 		2B1C73EC2488CF69B7F1907E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		390220034D196834BBB73BF8 /* FontsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontsTests.swift; sourceTree = "<group>"; };
 		3DFA25AA63E0C18ED058FF81 /* AudioError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioError.swift; sourceTree = "<group>"; };
 		3FD7F6FDBEE3E79D8899F889 /* HistoryPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryPopoverView.swift; sourceTree = "<group>"; };
 		435EA3FEEB95FDAC451A3F5A /* TextInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInjector.swift; sourceTree = "<group>"; };
@@ -55,6 +68,7 @@
 		5097803D53133D9C2E6F872B /* SayVoiceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SayVoiceApp.swift; sourceTree = "<group>"; };
 		66872C593D9A534A5318E263 /* TagField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagField.swift; sourceTree = "<group>"; };
 		6CC9B05F53A6F68425A0D6ED /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelManager.swift; sourceTree = "<group>"; };
+		6F5C20D87FE271CE5881BA9F /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = SayVoice/Resources/Fonts; sourceTree = SOURCE_ROOT; };
 		6FB8B98E685AE7F256F18828 /* Hotkey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hotkey.swift; sourceTree = "<group>"; };
 		70424ACE04E03989B1240580 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		7A4F1C52B9BD89C47338B077 /* SayVoice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SayVoice.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -63,6 +77,7 @@
 		8E25D74B58C19CCD4E3F0DE1 /* TranscriptionEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionEntry.swift; sourceTree = "<group>"; };
 		8E3EE5521FFDDE6F40F6DEF5 /* PasteboardInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardInjector.swift; sourceTree = "<group>"; };
 		9638B03B706CD265EE969EB3 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		9BB5DA4EC41BF344AFA1FD55 /* SayVoiceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SayVoiceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9ED9CD6176F60D082FC1EFE6 /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
 		A8C6D1846F6A89D7FEE29D26 /* HotkeyListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyListener.swift; sourceTree = "<group>"; };
 		AEAEC90B08A62BFFC4312CF2 /* AudioConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioConverter.swift; sourceTree = "<group>"; };
@@ -115,8 +130,10 @@
 		09932710312C68E584BD54AE = {
 			isa = PBXGroup;
 			children = (
+				6F5C20D87FE271CE5881BA9F /* Fonts */,
 				0D37BB8FF0375CDF1A7689B7 /* Packages */,
 				D35179EF1EC8D31068C92731 /* SayVoice */,
+				1FBD12774704F732A2BC8E49 /* SayVoiceTests */,
 				647E55898CB154F0FB787C52 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -145,6 +162,15 @@
 				0AD5E2802B500CCC9890B58A /* SayVoice.entitlements */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		1FBD12774704F732A2BC8E49 /* SayVoiceTests */ = {
+			isa = PBXGroup;
+			children = (
+				390220034D196834BBB73BF8 /* FontsTests.swift */,
+			);
+			name = SayVoiceTests;
+			path = Tests/SayVoiceTests;
 			sourceTree = "<group>";
 		};
 		23A36C18E1801C3B1D898DE5 /* UI */ = {
@@ -177,6 +203,7 @@
 			isa = PBXGroup;
 			children = (
 				7A4F1C52B9BD89C47338B077 /* SayVoice.app */,
+				9BB5DA4EC41BF344AFA1FD55 /* SayVoiceTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -268,6 +295,24 @@
 			productReference = 7A4F1C52B9BD89C47338B077 /* SayVoice.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D6557203EA107D570BF3599E /* SayVoiceTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DC9562AF2D45F90F2F603B0B /* Build configuration list for PBXNativeTarget "SayVoiceTests" */;
+			buildPhases = (
+				B15284A277AF040571C277DC /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				02CC4D1B8ED242D2E8D71F39 /* PBXTargetDependency */,
+			);
+			name = SayVoiceTests;
+			packageProductDependencies = (
+			);
+			productName = SayVoiceTests;
+			productReference = 9BB5DA4EC41BF344AFA1FD55 /* SayVoiceTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -275,9 +320,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					16AFC44C26B107EE9C96BA02 = {
+						ProvisioningStyle = Manual;
+					};
+					D6557203EA107D570BF3599E = {
 						ProvisioningStyle = Manual;
 					};
 				};
@@ -300,6 +348,7 @@
 			projectRoot = "";
 			targets = (
 				16AFC44C26B107EE9C96BA02 /* SayVoice */,
+				D6557203EA107D570BF3599E /* SayVoiceTests */,
 			);
 		};
 /* End PBXProject section */
@@ -310,6 +359,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				166EB1C971211F0161C51B80 /* Assets.xcassets in Resources */,
+				13A126F681EFAA2E3C2D889D /* Fonts in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -354,9 +404,46 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B15284A277AF040571C277DC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A297CC4784844B117B37A83 /* FontsTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		02CC4D1B8ED242D2E8D71F39 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 16AFC44C26B107EE9C96BA02 /* SayVoice */;
+			targetProxy = 2D373282A04C6CE09BFAAD00 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		1EA1BDC6979A6CC93F8DEE5E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sayvoice.SayVoiceTests;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SayVoice.app/Contents/MacOS/SayVoice";
+			};
+			name = Debug;
+		};
 		9CDC0931E8A2595DC9441C5C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -448,7 +535,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -460,6 +547,27 @@
 				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
+		};
+		EB0FC4DBA2BE27DA62A67154 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sayvoice.SayVoiceTests;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SayVoice.app/Contents/MacOS/SayVoice";
+			};
+			name = Release;
 		};
 		F13323B740725520714A9123 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -506,7 +614,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -535,6 +643,15 @@
 			buildConfigurations = (
 				9CDC0931E8A2595DC9441C5C /* Debug */,
 				9D743E5B675F21B74EB7C7EF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DC9562AF2D45F90F2F603B0B /* Build configuration list for PBXNativeTarget "SayVoiceTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1EA1BDC6979A6CC93F8DEE5E /* Debug */,
+				EB0FC4DBA2BE27DA62A67154 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

@@ -2,14 +2,14 @@ name: SayVoice
 options:
   bundleIdPrefix: com.sayvoice
   deploymentTarget:
-    macOS: "14.0"
-  xcodeVersion: "16.0"
+    macOS: "26.0"
+  xcodeVersion: "26.0"
   generateEmptyDirectories: true
 
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
     SWIFT_STRICT_CONCURRENCY: complete
 
 packages:
@@ -24,9 +24,18 @@ targets:
       - path: SayVoice
         excludes:
           - Resources/Info.plist
+          - Resources/Fonts
+      # Folder reference: copied into Contents/Resources/Fonts as a folder,
+      # which is what ATSApplicationFontsPath in Info.plist points at.
+      - path: SayVoice/Resources/Fonts
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: CWhisper
         product: WhisperSwift
+    scheme:
+      testTargets:
+        - SayVoiceTests
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sayvoice.app
@@ -38,3 +47,20 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: false
         COMBINE_HIDPI_IMAGES: true
+
+  SayVoiceTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/SayVoiceTests
+    dependencies:
+      - target: SayVoice
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        # The bundle carries no resources of its own, so let Xcode synthesise
+        # its Info.plist instead of checking an empty one into the repo.
+        GENERATE_INFOPLIST_FILE: true

@@ -16,6 +16,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
+        // Under XCTest the app is only a host process for unit tests:
+        // no event tap, no permission prompts, no windows.
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return
+        }
+
         coordinator = AppCoordinator()
         coordinator?.start()
     }

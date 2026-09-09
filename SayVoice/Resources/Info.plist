@@ -24,5 +24,7 @@
 	<string>SayVoice uses the microphone to record voice and transcribe speech to text.</string>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>SayVoice uses Accessibility to insert text into active text fields.</string>
+	<key>ATSApplicationFontsPath</key>
+	<string>Fonts</string>
 </dict>
 </plist>
