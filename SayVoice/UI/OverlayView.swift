@@ -280,53 +280,6 @@ private struct EqualizerView: View {
     }
 }
 
-/// Пер-бар состояние высот с attack/decay-сглаживанием.
-/// Обычный класс без Observable: Canvas и так перерисовывается TimelineView,
-/// мутации внутри отрисовки не должны инвалидировать вью.
-private final class BarEngine {
-    private(set) var heights: [CGFloat] = []
-    private var lastTime: TimeInterval = 0
-
-    /// Детерминированный пер-бар «характер» (псевдослучайный хэш).
-    private static func hash(_ k: Int) -> CGFloat {
-        let s = sin(CGFloat(k) * 12.9898) * 43758.5453
-        return s - s.rounded(.down)
-    }
-
-    func step(now: TimeInterval, history: [Float], barCount: Int) {
-        if heights.count != barCount {
-            heights = Array(repeating: 0, count: barCount)
-            lastTime = now
-        }
-        let dt = min(0.1, max(0.001, now - lastTime))
-        lastTime = now
-
-        let center = CGFloat(barCount - 1) / 2
-
-        for k in 0..<barCount {
-            let hashK = Self.hash(k)
-            let distance = abs(CGFloat(k) - center)
-
-            // «Рябь»: края реагируют на звук с небольшой задержкой (~40 Гц история)
-            let delay = Int(distance * 0.9)
-            let idx = history.count - 1 - delay
-            let raw: CGFloat = (idx >= 0 && idx < history.count) ? CGFloat(history[idx]) : 0
-
-            // Индивидуальность бара: чувствительность + собственное колебание,
-            // амплитуда танца растёт вместе с громкостью
-            let sensitivity = 0.7 + 0.3 * hashK
-            let wobble = 0.72 + 0.28 * sin(now * (2.6 + 3.2 * Double(hashK)) + Double(k) * 1.7)
-            let level = pow(min(1, raw), 1.15)
-            let target = min(1, level * sensitivity * wobble * 1.5)
-
-            // Быстрый подъём, плавное опадание — классическая VU-динамика
-            let rate: CGFloat = target > heights[k] ? 24 : 9
-            let alpha = 1 - exp(-dt * rate)
-            heights[k] += (target - heights[k]) * alpha
-        }
-    }
-}
-
 private struct RecordingTimer: View {
     let startDate: Date
 
