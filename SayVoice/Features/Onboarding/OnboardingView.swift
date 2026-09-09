@@ -26,6 +26,9 @@ struct OnboardingView: View {
         .frame(width: Self.windowSize.width, height: Self.windowSize.height)
         .background(DS.Colors.ground.color)
         .font(DS.font(.body))
+        // As in Settings: the Hold/Toggle picker is a system control and would
+        // otherwise pick the system accent.
+        .tint(DS.Colors.accent.color)
         // The permission poll is stopped by the coordinator, which observes
         // `willClose` on the onboarding window itself. An unfiltered observer
         // here would fire for any window the app ever closes.

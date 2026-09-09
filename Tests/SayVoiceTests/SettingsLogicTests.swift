@@ -20,6 +20,53 @@ final class SettingsLogicTests: XCTestCase {
         s.state = .idle; XCTAssertEqual(s.pillText, "Ready")
     }
 
+    /// Item 4 of the owner's first round: the pill's dot is a status light, not
+    /// the brand orb — Ready is green, and only work in flight is the accent.
+    func testStatusPillTintUsesTheClassicStatusPalette() {
+        let s = AppStatus()
+        let expected: [(AppState, DSColor, String)] = [
+            (.idle, DS.Colors.ok, "ok"),
+            (.recording, DS.Colors.rec, "rec"),
+            (.transcribing, DS.Colors.accent, "accent"),
+            (.injecting, DS.Colors.accent, "accent"),
+            (.error(.modelNotLoaded), DS.Colors.warn, "warn"),
+        ]
+        for (state, token, name) in expected {
+            s.state = state
+            XCTAssertEqual(s.pillTint.darkHex, token.darkHex, "\(state) should be \(name) on dark")
+            XCTAssertEqual(s.pillTint.lightHex, token.lightHex, "\(state) should be \(name) on light")
+        }
+        // The orb keeps its own language: idle is the brand accent there, and
+        // inserting shows the green check.
+        XCTAssertEqual(AppStatus().orbState, .idle)
+    }
+
+    /// And the dot on screen really is that colour, in both appearances.
+    func testStatusPillDrawsTheTintedDot() throws {
+        for (state, token) in [(AppState.idle, DS.Colors.ok), (.error(.modelNotLoaded), DS.Colors.warn)] {
+            for dark in [true, false] {
+                let status = AppStatus(); status.state = state; status.modelName = "Large Turbo Q5"
+                let appearance = try XCTUnwrap(NSAppearance(named: dark ? .darkAqua : .aqua))
+                let host = NSHostingView(rootView: AnyView(StatusPill(status: status).fixedSize()))
+                host.appearance = appearance
+                host.frame = CGRect(origin: .zero, size: host.fittingSize)
+                host.layoutSubtreeIfNeeded()
+                let rep = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+                host.cacheDisplay(in: host.bounds, to: rep)
+
+                // The dot sits at the pill's leading padding, vertically centred.
+                let scale = CGFloat(rep.pixelsWide) / host.bounds.width
+                let centre = CGPoint(x: (StatusPill.dotLeading + StatusPill.dotSize / 2) * scale,
+                                     y: CGFloat(rep.pixelsHigh) / 2)
+                let pixel = try XCTUnwrap(rep.colorAt(x: Int(centre.x), y: Int(centre.y))?.usingColorSpace(.sRGB))
+                let want = try XCTUnwrap(token.resolved(for: appearance).usingColorSpace(.sRGB))
+                XCTAssertEqual(pixel.redComponent, want.redComponent, accuracy: 0.08, "\(state) dark=\(dark)")
+                XCTAssertEqual(pixel.greenComponent, want.greenComponent, accuracy: 0.08, "\(state) dark=\(dark)")
+                XCTAssertEqual(pixel.blueComponent, want.blueComponent, accuracy: 0.08, "\(state) dark=\(dark)")
+            }
+        }
+    }
+
     func testSectionsAreOrderedAsSpecified() {
         XCTAssertEqual(SettingsSection.allCases.map(\.rawValue), ["general", "recognition", "dictionary", "insertion", "system"])
         for s in SettingsSection.allCases {

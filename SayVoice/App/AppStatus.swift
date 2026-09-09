@@ -25,6 +25,20 @@ final class AppStatus {
         }
     }
 
+    /// Colour of the status pill's dot: the classic status light — green when
+    /// ready, red while recording, the accent while work is in flight, amber
+    /// when something needs attention. Deliberately not `orbState`: the orb is
+    /// the brand mark and stays accent at idle in the overlay and the menu bar,
+    /// while a pill that glows brand-purple for "Ready" says nothing at all.
+    var pillTint: DSColor {
+        switch state {
+        case .idle:                     return DS.Colors.ok
+        case .recording:                return DS.Colors.rec
+        case .transcribing, .injecting: return DS.Colors.accent
+        case .error:                    return DS.Colors.warn
+        }
+    }
+
     var orbState: Orb.State {
         switch state {
         case .idle:         return .idle

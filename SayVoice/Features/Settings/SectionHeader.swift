@@ -21,15 +21,25 @@ struct SectionHeader: View {
     }
 }
 
-/// "● Ready · Large Turbo Q5" — orb at 10 pt plus text, neutral capsule.
+/// "● Ready · Large Turbo Q5" — a status dot plus text in a neutral capsule.
 /// `compact` drops the model name for narrow hosts such as the popover header.
+///
+/// The dot is a status light coloured by `AppStatus.pillTint`, not the brand
+/// orb: a pill is a readout, and green/red/amber says what the state is at a
+/// glance. The orb keeps its accent idle where it is the brand mark.
 struct StatusPill: View {
+    static let dotSize: CGFloat = 8
+    static let dotLeading: CGFloat = DS.Space.s8
+
     let status: AppStatus
     var compact: Bool = false
 
     var body: some View {
         HStack(spacing: DS.Space.s8) {
-            Orb(state: status.orbState, size: 10)
+            Circle()
+                .fill(status.pillTint.color)
+                .frame(width: Self.dotSize, height: Self.dotSize)
+                .animation(DS.Motion.stateChange, value: status.state)
             Text(compact ? status.compactText : status.pillText)
                 .font(DS.font(.valueSmall))
                 .foregroundStyle(DS.Colors.muted.color)
@@ -38,9 +48,9 @@ struct StatusPill: View {
                 .lineLimit(1)
                 .fixedSize()
         }
-        .padding(.leading, 6)
+        .padding(.leading, Self.dotLeading)
         .padding(.trailing, DS.Space.s12)
-        .padding(.vertical, 3)
+        .padding(.vertical, 5)
         .background(Capsule().fill(DS.Colors.surface.color))
         .overlay(Capsule().strokeBorder(DS.Colors.line.color, lineWidth: 1))
         .accessibilityElement(children: .combine)

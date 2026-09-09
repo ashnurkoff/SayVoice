@@ -57,7 +57,7 @@ Every role has a dark and a light value. Components never use literals — only 
 | `okHighlight` | `#8CEDB8` | `#8CEDB8` | Orb gradient highlight (done) |
 | `warnHighlight` | `#F7C773` | `#F7C773` | Orb gradient highlight (error) |
 
-**Three-places rule.** `accent` appears only as: (1) the orb and the logo, (2) the active or interactive control — selected row, on-state toggle, focused field border, and text actions (`.dsLink`, `.dsPrimary`), (3) the overlay glass — its border and its 10% tint. Headings, section icons, badges, body text, progress bars and dividers are neutral. Semantic colours (`rec`, `ok`, `warn`) are not the accent and do not count against the rule.
+**Three-places rule.** `accent` appears only as: (1) the orb and the logo, (2) the active or interactive control — selected row, on-state toggle, focused field border, and text actions (`.dsLink`, `.dsPrimary`); system controls get there through one `.tint(accent)` at each window root, (3) the overlay glass — its border and its 10% tint. Headings, section icons, badges, body text, progress bars and dividers are neutral. Semantic colours (`rec`, `ok`, `warn`) are not the accent and do not count against the rule.
 
 Exactly three text levels exist. If a fourth seems necessary, the layout is wrong.
 
@@ -117,7 +117,7 @@ Rule of boundaries: a component knows nothing about `SettingsStore`, `ModelManag
 ### 5.1 Settings window
 
 - **Size** 780 × 600, not resizable. Icon rail 64 wide on the left, content on the right.
-- **Sections** (rail order): General · Recognition · Dictionary · Insertion · System. Each section has a header: `section` title, one-line `muted` subtitle, and on the right a status pill "Ready · Turbo Q5" (orb `.idle` + text) that reflects app state and selected model.
+- **Sections** (rail order): General · Recognition · Dictionary · Insertion · System. Each section has a header: `section` title, one-line `muted` subtitle, and on the right a status pill "Ready · Turbo Q5" that reflects app state and selected model. Its dot is a status light — `ok` ready, `rec` recording, `accent` transcribing and inserting, `warn` needs attention (amended 2026-09-09: it used to be `Orb`, which made "Ready" glow brand-purple and said nothing). The orb itself is unchanged in the overlay and the menu bar.
 - **General:** one card "Recording hotkey" containing `HotkeyRecorder` on one row and the Hold/Toggle segmented picker on the next, each a `SettingsRow`, with the mode note under the picker; one card with rows "Show overlay while recording" and "Sound feedback".
 - **Recognition:** card "Model" with `ModelRow` per model (Base, Small, Large Turbo Q5 *recommended*, Large Turbo Q8, Large Turbo); selecting a model that is not on disk shows `DownloadProgress` inside its row. Card "Language" with the existing 12-entry menu picker and its note. This is the only section allowed to scroll.
 - The default model on a fresh install is Large Turbo Q5 (`ModelSize.recommended`).

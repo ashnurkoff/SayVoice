@@ -70,5 +70,8 @@ struct HistoryPopover: View {
         .frame(width: Self.width)
         .background(DS.Colors.ground.color)
         .font(DS.font(.body))
+        // The search field's caret and selection, and anything a future row
+        // adds, follow the app accent rather than the system one.
+        .tint(DS.Colors.accent.color)
     }
 }

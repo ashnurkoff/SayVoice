@@ -36,6 +36,11 @@ struct SettingsView: View {
         .frame(width: Self.windowSize.width, height: Self.windowSize.height)
         .background(DS.Colors.ground.color)
         .font(DS.font(.body))
+        // System controls draw their on-state in the system accent otherwise —
+        // a blue toggle in an indigo app. One tint at the root covers every
+        // toggle, segmented picker and menu picker the window hosts (spec 3.1:
+        // the active control is the accent).
+        .tint(DS.Colors.accent.color)
         // The header pill names the selected model, so it follows the choice.
         .onChange(of: settings.modelSize) { _, new in
             status.modelName = (ModelManager.ModelSize(settingsString: new) ?? .recommended).displayName
