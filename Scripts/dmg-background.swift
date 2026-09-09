@@ -5,7 +5,7 @@
 //
 // 660 x 400 pt at 2x (1320 x 800 px, 144 dpi so Finder lays it out in points).
 // Left half: the brand gradient panel (accent -> accent2) with the white
-// waveform glyph and the "SayVoice" wordmark. Right half: the dark ground with
+// "SayVoice" wordmark (no glyph — the app icon already carries the waveform). Right half: the dark ground with
 // a curved arrow running from the left icon slot to the right one and the
 // caption. Icon slots sit at (165, 210) and (495, 210) in window points, which
 // is what Scripts/make-dmg tells Finder.
@@ -201,24 +201,7 @@ func drawFallbackWaveform(centeredAt centre: CGPoint, width: CGFloat) {
     context.fillPath()
 }
 
-let glyphCentre = CGPoint(x: leftSlot.x, y: flip(68))
-// The symbol box is a little taller than its point size, and the band above the
-// 128 pt icon slot is only 146 pt high, so the glyph is sized to sit inside it.
-// The wordmark goes at the foot of the panel instead of under the glyph: the
-// icon Finder draws in the slot already carries a "SayVoice" label.
-if let (glyph, glyphSize) = whiteSymbol("waveform", pointSize: 110) {
-    context.draw(
-        glyph,
-        in: CGRect(
-            x: glyphCentre.x - glyphSize.width / 2,
-            y: glyphCentre.y - glyphSize.height / 2,
-            width: glyphSize.width,
-            height: glyphSize.height
-        )
-    )
-} else {
-    drawFallbackWaveform(centeredAt: glyphCentre, width: 150)
-}
+// The panel carries no glyph: the app icon in the slot already shows the waveform.
 
 // MARK: - Text
 
