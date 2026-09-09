@@ -90,7 +90,12 @@ final class MenuBarController {
         // Let the coordinator update historyEntries before we build the view
         onPopoverWillShow?()
 
-        popover.contentViewController = NSHostingController(rootView: makeContent())
+        let controller = NSHostingController(rootView: makeContent())
+        // The list reports its height one layout pass after the first, so the
+        // popover must follow the controller's preferred size — otherwise it
+        // opens at the capped height and never shrinks to what it holds.
+        controller.sizingOptions = .preferredContentSize
+        popover.contentViewController = controller
         // The app is LSUIElement, so it is never activated by a status-item
         // click on its own. Without this the search field gets no caret and
         // the clear confirmation cannot present. Scoped to the popover: the

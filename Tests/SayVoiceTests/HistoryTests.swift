@@ -41,17 +41,61 @@ final class HistoryTests: XCTestCase {
     func testHistoryPopoverRendersEmptyAndFilled() {
         let status = AppStatus(); status.modelName = "Large Turbo Q5"
         let entries = (0..<3).map { TranscriptionEntry(text: "Entry \($0) with enough words to wrap onto a second line in the popover", durationSeconds: 4.2, language: "en") }
-        for list in [[], entries] {
+        var heights: [Int: CGFloat] = [:]
+        for list in [[], Array(entries.prefix(1)), entries] {
             for dark in [true, false] {
-                let host = NSHostingView(rootView: HistoryPopover(entries: list, status: status, hotkeyName: "Right ⌥", onClear: {}, onSettings: {}))
-                host.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-                host.layoutSubtreeIfNeeded()
-                let s = host.fittingSize
+                let s = popoverSize(entries: list, status: status, dark: dark)
                 XCTAssertEqual(s.width, HistoryPopover.width, accuracy: 0.5)
-                XCTAssertGreaterThan(s.height, list.isEmpty ? 120 : 200)
+                XCTAssertGreaterThan(s.height, list.isEmpty ? 120 : 180)
                 XCTAssertLessThanOrEqual(s.height, 520)
+                if dark { heights[list.count] = s.height }
             }
         }
+        // Item 5 of the owner's first round: the list used to stretch to its
+        // 360 pt cap whatever it held, so a single dictation opened a popover
+        // two thirds empty. It now hugs what it has.
+        let one = try! XCTUnwrap(heights[1])
+        let three = try! XCTUnwrap(heights[3])
+        XCTAssertLessThan(one, three, "one entry must open a shorter popover than three")
+        XCTAssertLessThan(one, 260, "one entry still reserves the whole list area (\(one) pt)")
+    }
+
+    /// The size the popover window itself uses: the hosting controller's
+    /// preferred content size, which is what `MenuBarController` shows the
+    /// popover at. A `ScrollView` offered more height than its rows need would
+    /// swallow the difference here.
+    @MainActor
+    func testThePopoverWindowSizeFollowsTheNumberOfEntries() {
+        let status = AppStatus(); status.modelName = "Large Turbo Q5"
+        func preferredHeight(_ count: Int) -> CGFloat {
+            let entries = (0..<count).map {
+                TranscriptionEntry(text: "Entry \($0) with enough words to wrap onto a second line in the popover",
+                                   durationSeconds: 4.2, language: "en")
+            }
+            let controller = NSHostingController(rootView: HistoryPopover(entries: entries, status: status,
+                                                                          hotkeyName: "Right ⌥", onClear: {}, onSettings: {}))
+            controller.sizingOptions = .preferredContentSize
+            _ = HistoryPopover.settledFittingSize(of: controller.view)
+            return controller.preferredContentSize.height
+        }
+        let one = preferredHeight(1)
+        let three = preferredHeight(3)
+        let many = preferredHeight(30)
+        XCTAssertGreaterThan(one, 0)
+        XCTAssertLessThan(one, three, "one entry must open a shorter popover than three")
+        XCTAssertLessThan(three, many, "three must be shorter than a full list")
+        XCTAssertLessThanOrEqual(many, HistoryPopover.listMaxHeight + 220, "the cap still holds a long list")
+    }
+
+    /// The list measures itself and reports its height back through the view
+    /// state, so the popover's fitting size settles one layout pass after the
+    /// first. Measured until it stops moving.
+    @MainActor
+    private func popoverSize(entries: [TranscriptionEntry], status: AppStatus, dark: Bool) -> CGSize {
+        let host = NSHostingView(rootView: HistoryPopover(entries: entries, status: status, hotkeyName: "Right ⌥",
+                                                          onClear: {}, onSettings: {}))
+        host.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        return HistoryPopover.settledFittingSize(of: host)
     }
 
     @MainActor

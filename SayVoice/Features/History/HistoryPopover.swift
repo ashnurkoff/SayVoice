@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Menu-bar popover: header with logo and status, search, recent dictations,
@@ -14,6 +15,10 @@ struct HistoryPopover: View {
 
     @State private var query = ""
     @State private var confirmingClear = false
+    /// Height the rows actually need, reported by the list itself. Zero until
+    /// the first layout pass has measured it, and the list then falls back to
+    /// filling the cap — never to nothing.
+    @State private var listHeight: CGFloat = 0
 
     private var shown: [TranscriptionEntry] { HistoryFilter.apply(entries, query: query) }
 
@@ -49,7 +54,12 @@ struct HistoryPopover: View {
                         ForEach(shown) { HistoryRow(entry: $0) }
                     }
                     .padding(DS.Space.s4)
+                    // A ScrollView takes every point it is offered, so the cap
+                    // alone made one dictation open a popover two thirds empty.
+                    // The list measures itself and the frame below hugs it.
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { listHeight = $0 }
                 }
+                .frame(height: listHeight > 0 ? min(listHeight, Self.listMaxHeight) : nil)
                 .frame(maxHeight: Self.listMaxHeight)
             }
 
@@ -74,4 +84,23 @@ struct HistoryPopover: View {
         // adds, follow the app accent rather than the system one.
         .tint(DS.Colors.accent.color)
     }
+
+    #if DEBUG
+    /// Test/render hook: the fitting size once the list's measured height has
+    /// reached the view state. The first layout pass runs before that
+    /// measurement exists and reports the capped fallback, so the size is read
+    /// again until it stops moving.
+    static func settledFittingSize(of host: NSView, passes: Int = 8) -> NSSize {
+        host.frame = CGRect(x: 0, y: 0, width: width, height: listMaxHeight * 2)
+        var last = NSSize.zero
+        for _ in 0..<passes {
+            host.layoutSubtreeIfNeeded()
+            let size = host.fittingSize
+            if size.height > 0, abs(size.height - last.height) < 0.5 { return size }
+            last = size
+            RunLoop.current.run(until: Date().addingTimeInterval(0.01))
+        }
+        return last
+    }
+    #endif
 }
