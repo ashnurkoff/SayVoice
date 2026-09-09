@@ -36,6 +36,10 @@ struct SettingsView: View {
         .frame(width: Self.windowSize.width, height: Self.windowSize.height)
         .background(DS.Colors.ground.color)
         .font(DS.font(.body))
+        // The header pill names the selected model, so it follows the choice.
+        .onChange(of: settings.modelSize) { _, new in
+            status.modelName = (ModelManager.ModelSize(settingsString: new) ?? .recommended).displayName
+        }
     }
 
     @ViewBuilder

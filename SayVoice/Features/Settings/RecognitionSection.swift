@@ -24,14 +24,22 @@ struct RecognitionSection: View {
                                 isDownloaded: modelManager.isModelAvailable(model),
                                 isHighlighted: router.highlightedModel == model,
                                 download: downloads.state(for: model),
-                                onSelect: { settings.modelSize = model.settingsString },
-                                onDownload: { downloads.start(model) },
+                                onSelect: {
+                                    settings.modelSize = model.settingsString
+                                    router.highlightedModel = nil
+                                },
+                                onDownload: {
+                                    downloads.start(model)
+                                    router.highlightedModel = nil
+                                },
                                 onCancel: { downloads.cancel(model) },
                                 onRetry: { downloads.start(model) }
                             )
                         }
                     }
-                    .padding(.horizontal, DS.Space.s8)
+                    // 16 pt, like SettingsRow: the row borders start at the
+                    // same x as the hairlines in the Language card.
+                    .padding(.horizontal, DS.Space.s16)
                     .padding(.top, DS.Space.s4)
                 }
 
@@ -59,6 +67,8 @@ struct RecognitionSection: View {
                 }
             }
             .padding(.bottom, DS.Space.s8)
+            // Room for the scroll bar, so it never sits on a card's edge.
+            .padding(.trailing, DS.Space.s8)
         }
         .scrollIndicators(.automatic)
         .onDisappear { router.highlightedModel = nil }

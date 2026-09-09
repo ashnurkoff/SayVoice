@@ -289,8 +289,9 @@ final class AppCoordinator {
         settingsRouter.highlightedModel = highlight
         status.modelName = (ModelManager.ModelSize(settingsString: settingsStore.modelSize) ?? .recommended).displayName
 
-        // Don't open multiple windows
-        if let existing = settingsWindow, existing.isVisible {
+        // Don't open multiple windows — a minimised one counts as open.
+        if let existing = settingsWindow, existing.isVisible || existing.isMiniaturized {
+            existing.deminiaturize(nil)
             AppWindow.present(existing)
             return
         }
