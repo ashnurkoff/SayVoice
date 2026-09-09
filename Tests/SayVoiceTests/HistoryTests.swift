@@ -36,4 +36,21 @@ final class HistoryTests: XCTestCase {
             XCTAssertGreaterThan(host.fittingSize.height, 60)
         }
     }
+
+    @MainActor
+    func testHistoryPopoverRendersEmptyAndFilled() {
+        let status = AppStatus(); status.modelName = "Large Turbo Q5"
+        let entries = (0..<3).map { TranscriptionEntry(text: "Entry \($0) with enough words to wrap onto a second line in the popover", durationSeconds: 4.2, language: "en") }
+        for list in [[], entries] {
+            for dark in [true, false] {
+                let host = NSHostingView(rootView: HistoryPopover(entries: list, status: status, hotkeyName: "Right ⌥", onClear: {}, onSettings: {}))
+                host.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+                host.layoutSubtreeIfNeeded()
+                let s = host.fittingSize
+                XCTAssertEqual(s.width, HistoryPopover.width, accuracy: 0.5)
+                XCTAssertGreaterThan(s.height, list.isEmpty ? 120 : 200)
+                XCTAssertLessThanOrEqual(s.height, 520)
+            }
+        }
+    }
 }
