@@ -28,5 +28,8 @@ struct SettingsRow<Control: View>: View {
         .overlay(alignment: .top) {
             Rectangle().fill(DS.Colors.line.color).frame(height: 1).padding(.leading, DS.Space.s16)
         }
+        // One element per row, so VoiceOver reads a toggle together with the
+        // label it belongs to instead of announcing a bare switch.
+        .accessibilityElement(children: .combine)
     }
 }

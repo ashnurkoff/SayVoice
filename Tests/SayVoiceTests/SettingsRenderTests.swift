@@ -57,6 +57,41 @@ final class SettingsRenderTests: XCTestCase {
         }
     }
 
+    /// The rail chrome must cover all 64 pt. Its buttons are only 40 pt wide,
+    /// so without the width frame the fill — and the hairline it carries —
+    /// would float in the middle and the backdrop would show at both edges.
+    func testRailFillSpansTheFullWidth() throws {
+        for dark in [true, false] {
+            let host = NSHostingView(rootView: AnyView(
+                ZStack(alignment: .leading) {
+                    Color.red   // shows through anywhere the rail fails to paint
+                    SettingsRail(selected: .general, onSelect: { _ in }).frame(width: SettingsView.railWidth)
+                }
+                .frame(width: SettingsView.railWidth, height: 600)))
+            host.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+            host.frame = CGRect(origin: .zero, size: NSSize(width: SettingsView.railWidth, height: 600))
+            host.layoutSubtreeIfNeeded()
+            let rep = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: rep)
+
+            // A scanline well below the last icon, so it crosses nothing but
+            // the rail's own background.
+            let scale = CGFloat(rep.pixelsWide) / SettingsView.railWidth
+            let y = Int(300 * scale)
+            let centre = try XCTUnwrap(rep.colorAt(x: rep.pixelsWide / 2, y: y)?.usingColorSpace(.sRGB))
+            for x in 0..<rep.pixelsWide {
+                let pixel = try XCTUnwrap(rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB))
+                // The backdrop is pure red; the rail's translucent fill over it
+                // is never that saturated.
+                XCTAssertFalse(pixel.redComponent > 0.9 && pixel.greenComponent < 0.1,
+                               "the backdrop shows through the rail at x=\(x) of \(rep.pixelsWide), dark=\(dark)")
+            }
+            // The fill reaches the leading edge unchanged.
+            let leading = try XCTUnwrap(rep.colorAt(x: 0, y: y)?.usingColorSpace(.sRGB))
+            XCTAssertEqual(leading.greenComponent, centre.greenComponent, accuracy: 0.02, "dark=\(dark)")
+        }
+    }
+
     func testLicenseTextsAreBundled() {
         for item in LicensesSheet.items {
             XCTAssertFalse(item.text.isEmpty, "\(item.name) licence text missing from the bundle")
