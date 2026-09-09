@@ -1999,7 +1999,7 @@ instead of a separate window; the menu bar loses its download item."
 - [ ] **Step 1: Guards**
 
 ```bash
-grep -rn "ModelDownloadView\|HotkeyRecorderField\|showModelDownloadWindow\|onDownloadModel\|LegacySettingsView\|PlaceholderSection" SayVoice Tests || echo "no stale symbols"
+grep -rn "ModelDownloadView\|HotkeyRecorderField\|showModelDownloadWindow\|onDownloadModel\|LegacySettingsView\|LegacyModelRow\|PlaceholderSection" SayVoice Tests || echo "no stale symbols"
 grep -rln "[А-Яа-яЁё]" SayVoice/DesignSystem SayVoice/Features Tests SayVoice/App/AppStatus.swift SayVoice/App/AppWindow.swift || echo "no Cyrillic in new files"
 grep -rn "Color(red:\|Color(nsColor:\|\.blue\b\|\.purple\b\|\.orange\b\|\.green\b" SayVoice/DesignSystem/Components SayVoice/Features/Settings || echo "no literal colours"
 grep -rn "SettingsStore\|ModelManager\|Hotkey\b\|AppCoordinator" SayVoice/DesignSystem || echo "design system references no feature types"
