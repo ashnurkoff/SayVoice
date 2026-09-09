@@ -112,6 +112,29 @@ final class ComponentRenderTests: XCTestCase {
         }
     }
 
+    /// The purpose note sits under the name on a line of its own, and wraps
+    /// rather than truncates when the row is narrow.
+    func testModelRowShowsAWrappingPurposeNote() {
+        for dark in [true, false] {
+            let plain = renderSize(modelRow(selected: false, downloaded: false, highlighted: false, download: nil),
+                                   width: 640, dark: dark)
+            let noted = renderSize(modelRow(note: ModelManager.ModelSize.turboQ5.purpose,
+                                            selected: false, downloaded: false, highlighted: false, download: nil),
+                                   width: 640, dark: dark)
+            XCTAssertGreaterThan(noted.height, plain.height, "the note adds no height")
+            XCTAssertLessThan(noted.height, plain.height + 24, "the note took more than one line at 640 pt")
+
+            // The onboarding pane is narrower than the note's ideal width, so
+            // there it must wrap onto a second line instead of being cut off.
+            let narrow = renderSize(modelRow(note: ModelManager.ModelSize.turboQ5.purpose,
+                                             selected: false, downloaded: false, highlighted: false, download: nil),
+                                    width: 320, dark: dark)
+            let narrowPlain = renderSize(modelRow(selected: false, downloaded: false, highlighted: false, download: nil),
+                                         width: 320, dark: dark)
+            XCTAssertGreaterThan(narrow.height, narrowPlain.height + 20, "the note truncated instead of wrapping")
+        }
+    }
+
     /// A long name must not push the size chip off the row: it is clamped to
     /// one line and truncated instead.
     func testModelRowKeepsALongNameOnOneLine() {
@@ -121,8 +144,9 @@ final class ComponentRenderTests: XCTestCase {
         XCTAssertEqual(long.height, short.height, accuracy: 0.5)
     }
 
-    private func modelRow(name: String = "Large Turbo Q5", selected: Bool, downloaded: Bool, highlighted: Bool, download: DownloadState?) -> ModelRow {
-        ModelRow(name: name, badge: "recommended", badgeIsAccent: true, qualitySteps: 4, sizeText: "574 MB",
+    private func modelRow(name: String = "Large Turbo Q5", note: String? = nil,
+                          selected: Bool, downloaded: Bool, highlighted: Bool, download: DownloadState?) -> ModelRow {
+        ModelRow(name: name, note: note, badge: "recommended", badgeIsAccent: true, qualitySteps: 4, sizeText: "574 MB",
                  isSelected: selected, isDownloaded: downloaded, isHighlighted: highlighted, download: download,
                  onSelect: {}, onDownload: {}, onCancel: {}, onRetry: {})
     }

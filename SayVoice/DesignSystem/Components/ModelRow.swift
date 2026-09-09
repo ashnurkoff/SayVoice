@@ -3,11 +3,15 @@ import SwiftUI
 /// One selectable model in the recognition list. Takes plain values: the
 /// feature view maps the model catalogue onto them.
 ///
-/// Row: selection indicator · name · badge · quality bar · downloaded · size.
-/// A second line hosts `DownloadProgress` when a download is offered or
-/// running. Selection tint is the accent (the "active control" place).
+/// Row: selection indicator · name · badge · quality bar · downloaded · size,
+/// with an optional one-line note under the name. A further line hosts
+/// `DownloadProgress` when a download is offered or running. Selection tint is
+/// the accent (the "active control" place).
 struct ModelRow: View {
     let name: String
+    /// What the model is for, in `caption`/`muted` under the name. Wraps rather
+    /// than truncates: it is the only place the row explains itself.
+    let note: String?
     let badge: String?
     let badgeIsAccent: Bool
     let qualitySteps: Int
@@ -17,6 +21,9 @@ struct ModelRow: View {
     let isHighlighted: Bool
     /// Off where the row has no width to spare — the onboarding pane.
     let showsQualityBar: Bool
+    /// Tighter vertical padding, for the onboarding pane where five rows with
+    /// their notes and a download line have to share one window.
+    let isCompact: Bool
     let download: DownloadState?
     /// Passed to `DownloadProgress`: only one row on a screen may be primary.
     let downloadIsProminent: Bool
@@ -26,16 +33,17 @@ struct ModelRow: View {
     let onRetry: () -> Void
 
     init(
-        name: String, badge: String? = nil, badgeIsAccent: Bool = false, qualitySteps: Int, sizeText: String,
+        name: String, note: String? = nil, badge: String? = nil, badgeIsAccent: Bool = false,
+        qualitySteps: Int, sizeText: String,
         isSelected: Bool, isDownloaded: Bool, isHighlighted: Bool = false, showsQualityBar: Bool = true,
-        download: DownloadState?, downloadIsProminent: Bool = true,
+        isCompact: Bool = false, download: DownloadState?, downloadIsProminent: Bool = true,
         onSelect: @escaping () -> Void, onDownload: @escaping () -> Void,
         onCancel: @escaping () -> Void, onRetry: @escaping () -> Void
     ) {
-        self.name = name; self.badge = badge; self.badgeIsAccent = badgeIsAccent
+        self.name = name; self.note = note; self.badge = badge; self.badgeIsAccent = badgeIsAccent
         self.qualitySteps = qualitySteps; self.sizeText = sizeText
         self.isSelected = isSelected; self.isDownloaded = isDownloaded; self.isHighlighted = isHighlighted
-        self.showsQualityBar = showsQualityBar
+        self.showsQualityBar = showsQualityBar; self.isCompact = isCompact
         self.download = download; self.downloadIsProminent = downloadIsProminent
         self.onSelect = onSelect; self.onDownload = onDownload; self.onCancel = onCancel; self.onRetry = onRetry
     }
@@ -43,23 +51,38 @@ struct ModelRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.s8) {
             Button(action: onSelect) {
-                HStack(spacing: DS.Space.s12) {
-                    indicator
-                    Text(name)
-                        .font(DS.font(isSelected ? .bodyMedium : .body))
-                        .foregroundStyle(DS.Colors.text.color)
-                        // One line: a long name truncates rather than pushing
-                        // the size chip out of the row.
-                        .lineLimit(1)
-                    if let badge {
-                        Chip(badge, style: badgeIsAccent ? .accent : .neutral)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: DS.Space.s12) {
+                        indicator
+                        Text(name)
+                            .font(DS.font(isSelected ? .bodyMedium : .body))
+                            .foregroundStyle(DS.Colors.text.color)
+                            // One line: a long name truncates rather than pushing
+                            // the size chip out of the row.
+                            .lineLimit(1)
+                        if let badge {
+                            Chip(badge, style: badgeIsAccent ? .accent : .neutral)
+                        }
+                        if showsQualityBar { qualityBar }
+                        Spacer(minLength: DS.Space.s12)
+                        if isDownloaded {
+                            Chip("downloaded", style: .ok)
+                        }
+                        Chip(sizeText)
                     }
-                    if showsQualityBar { qualityBar }
-                    Spacer(minLength: DS.Space.s12)
-                    if isDownloaded {
-                        Chip("downloaded", style: .ok)
+                    if let note {
+                        Text(note)
+                            .font(DS.font(.caption))
+                            .foregroundStyle(DS.Colors.muted.color)
+                            .multilineTextAlignment(.leading)
+                            // Wraps, never truncates: a cut-off explanation is
+                            // worse than none. It runs the width of the row
+                            // rather than the width the name leaves, and starts
+                            // under the name, past the indicator.
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.leading, 28)
                     }
-                    Chip(sizeText)
                 }
                 .contentShape(Rectangle())
             }
@@ -72,7 +95,7 @@ struct ModelRow: View {
             }
         }
         .padding(.horizontal, DS.Space.s12)
-        .padding(.vertical, DS.Space.s8)
+        .padding(.vertical, isCompact ? DS.Space.s4 : DS.Space.s8)
         .background(
             RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                 .fill(isSelected ? DS.Colors.accentSoft.color : Color.clear)

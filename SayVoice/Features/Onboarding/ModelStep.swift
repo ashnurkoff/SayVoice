@@ -14,6 +14,7 @@ struct ModelStep: View {
                     let isDownloaded = model.modelManager.isModelAvailable(size)
                     ModelRow(
                         name: size.displayName,
+                        note: size.purpose,
                         badge: size == .recommended ? "recommended" : nil,
                         badgeIsAccent: size == .recommended,
                         qualitySteps: size.qualitySteps,
@@ -27,6 +28,9 @@ struct ModelStep: View {
                         // The onboarding pane leaves no room for the bar next to
                         // the name and the chips; Settings keeps it.
                         showsQualityBar: false,
+                        // Five rows, five notes, a download line and a footer:
+                        // the pane pays for every point of row padding.
+                        isCompact: true,
                         // The download control is a line of its own below the
                         // list, not one per row: five of them would not fit the
                         // window, and its status line needs the width.

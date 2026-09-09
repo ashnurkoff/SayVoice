@@ -24,14 +24,8 @@ struct SettingsView: View {
             SettingsRail(selected: router.section) { router.section = $0 }
                 .frame(width: Self.railWidth)
 
-            VStack(alignment: .leading, spacing: DS.Space.s20) {
-                SectionHeader(section: router.section, status: status)
-                sectionContent(router.section)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                Spacer(minLength: 0)
-            }
-            .padding(Self.contentPadding)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            column
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(width: Self.windowSize.width, height: Self.windowSize.height)
         .background(DS.Colors.ground.color)
@@ -44,6 +38,34 @@ struct SettingsView: View {
         // The header pill names the selected model, so it follows the choice.
         .onChange(of: settings.modelSize) { _, new in
             status.modelName = (ModelManager.ModelSize(settingsString: new) ?? .recommended).displayName
+        }
+    }
+
+    /// The content column. A scrolling section keeps the header's margins but
+    /// hands the rest of the height to its own scroll area, which then reaches
+    /// the window's bottom edge; every other section sits inside the full 28 pt
+    /// margin with a spacer under it.
+    @ViewBuilder
+    private var column: some View {
+        if router.section.scrollsToBottomEdge {
+            VStack(alignment: .leading, spacing: DS.Space.s20) {
+                SectionHeader(section: router.section, status: status)
+                    .padding(.horizontal, Self.contentPadding)
+                sectionContent(router.section)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    // No trailing padding: the section draws its own closing
+                    // hairline flush with the window.
+                    .padding(.leading, Self.contentPadding)
+            }
+            .padding(.top, Self.contentPadding)
+        } else {
+            VStack(alignment: .leading, spacing: DS.Space.s20) {
+                SectionHeader(section: router.section, status: status)
+                sectionContent(router.section)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                Spacer(minLength: 0)
+            }
+            .padding(Self.contentPadding)
         }
     }
 
@@ -66,8 +88,10 @@ struct SettingsView: View {
     #if DEBUG
     /// Test hook: fitting height of a section's content at the content width,
     /// rendered on its own so the window frame cannot mask an overflow.
-    /// Mirrors `body`'s column exactly — trailing `Spacer` included, since it
-    /// costs one more `DS.Space.s20` gap.
+    /// Mirrors the column of a section that does not scroll — trailing `Spacer`
+    /// included, since it costs one more `DS.Space.s20` gap. Measuring the
+    /// scrolling section this way reports the height its content *wants*, which
+    /// is exactly what its own test asks about.
     static func measuredContentHeight(for section: SettingsSection, hosting: NSHostingView<SettingsView>) -> CGFloat {
         let root = hosting.rootView
         let probe = NSHostingView(rootView: AnyView(

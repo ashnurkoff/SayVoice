@@ -44,6 +44,19 @@ final class ModelManager {
             }
         }
 
+        /// One line under the name in the model list, in both Settings and
+        /// onboarding: what this model is actually for. The catalogue is the
+        /// only place that knows; `ModelRow` renders whatever it is handed.
+        var purpose: String {
+            switch self {
+            case .base:    return "Fastest and roughest; short English commands only."
+            case .small:   return "Light and quick; fine for English, weak on Russian."
+            case .turboQ5: return "Best balance: accurate in Russian and English, faster than real time."
+            case .turboQ8: return "Same model, less compression; marginally more accurate for 300 MB more."
+            case .turbo:   return "Full precision; no audible gain over Q8 on Apple Silicon, 1.6 GB."
+            }
+        }
+
         var fileName: String { "\(rawValue).bin" }
 
         var downloadURL: URL {

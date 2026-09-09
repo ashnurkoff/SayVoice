@@ -232,6 +232,9 @@ final class OnboardingTests: XCTestCase {
         for size in OnboardingModel.offeredModels {
             for selected in [true, false] {
                 for dark in [true, false] {
+                    // Without the note: it is allowed to wrap, so its ideal
+                    // width is wider than the pane by design. The name line is
+                    // what must not be squeezed.
                     let row = ModelRow(
                         name: size.displayName,
                         badge: size == .recommended ? "recommended" : nil,

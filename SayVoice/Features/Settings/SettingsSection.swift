@@ -6,6 +6,11 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Whether the section owns the space down to the window's bottom edge.
+    /// Recognition scrolls, so it does — a section that stops 28 pt short of
+    /// the edge leaves a dead strip under a list that clearly continues.
+    var scrollsToBottomEdge: Bool { self == .recognition }
+
     var title: String {
         switch self {
         case .general:     return "General"

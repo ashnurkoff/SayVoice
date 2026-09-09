@@ -57,6 +57,18 @@ final class SettingsRenderTests: XCTestCase {
         }
     }
 
+    /// Item 8 of the owner's first round: Language is one row and the setting
+    /// changed most often, so it sits above the five model rows and is visible
+    /// without scrolling; and Recognition is the one section whose content runs
+    /// to the window's bottom edge instead of stopping short of it.
+    func testRecognitionPutsLanguageFirstAndReachesTheBottomEdge() {
+        XCTAssertEqual(RecognitionSection.cardOrder, [.language, .model])
+        XCTAssertTrue(SettingsSection.recognition.scrollsToBottomEdge)
+        for section in SettingsSection.allCases where section != .recognition {
+            XCTAssertFalse(section.scrollsToBottomEdge, "\(section) does not scroll")
+        }
+    }
+
     /// The rail chrome must cover all 64 pt. Its buttons are only 40 pt wide,
     /// so without the width frame the fill — and the hairline it carries —
     /// would float in the middle and the backdrop would show at both edges.

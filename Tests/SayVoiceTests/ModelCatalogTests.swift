@@ -14,6 +14,24 @@ final class ModelCatalogTests: XCTestCase {
         XCTAssertEqual(steps, steps.sorted(), "catalogue is listed from lightest to best")
     }
 
+    /// Item 7 of the owner's first round: every row explains what its model is
+    /// for, in one line, in English.
+    func testEveryModelCarriesAOneLinePurposeNote() {
+        let expected: [ModelManager.ModelSize: String] = [
+            .base:    "Fastest and roughest; short English commands only.",
+            .small:   "Light and quick; fine for English, weak on Russian.",
+            .turboQ5: "Best balance: accurate in Russian and English, faster than real time.",
+            .turboQ8: "Same model, less compression; marginally more accurate for 300 MB more.",
+            .turbo:   "Full precision; no audible gain over Q8 on Apple Silicon, 1.6 GB.",
+        ]
+        for m in ModelManager.ModelSize.allCases {
+            XCTAssertEqual(m.purpose, expected[m], "\(m)")
+            XCTAssertFalse(m.purpose.contains("\n"), "\(m): the note is one line")
+            XCTAssertNil(m.purpose.rangeOfCharacter(from: CharacterSet(charactersIn: "абвгдеёжзийклмнопрстуфхцчшщъыьэюя")),
+                         "\(m): notes are English")
+        }
+    }
+
     func testRecommendedIsTurboQ5AndIsTheStoreDefault() {
         XCTAssertEqual(ModelManager.ModelSize.recommended, .turboQ5)
         XCTAssertEqual(ModelManager.ModelSize(settingsString: "large-v3-turbo-q5"), .turboQ5)
