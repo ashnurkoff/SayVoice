@@ -992,6 +992,10 @@ Coordinator: `menuBarController = MenuBarController(status: status)`; `menuBarCo
 
 # Batch D — Translation
 
+### Task D0: Batch C review residuals
+
+- [ ] README Tests section: the suite needs no microphone; one download test touches the network briefly. Spec §9: drop the per-stage install sentence (§10 holds the single-install policy). Delete the unused `TranscriptionHistoryStore.recent(_:)`. `SettingsStore(defaults: UserDefaults = .standard)`; tests and the screenshot harness use an ephemeral suite via `TestSupport.swift` (`TestDefaults.ephemeral()`), then regenerate the screenshots. Nest the `URLProtocol` stubs inside `ModelCatalogTests`. Harness: one `XCTContext.runActivity` per surface, failures collected. Commit — `Fix Batch C review residuals: honest README, single install policy, ephemeral defaults in tests`
+
 ### Task D1: Translate the remaining Russian comments and strings
 
 **Files:** every file under `SayVoice/` and `Tests/` still containing Cyrillic (list with the guard below); `AppCoordinator.swift:~209` `.transcriptionFailed("Не услышал ничего")` → `"Didn't catch anything"`; `Transcription/TranscriptionEngine.initialPrompt` — **the Russian prompt sentence given to whisper stays Russian when the language is Russian**: it is model input, not UI. Make it language-aware: a Russian wrapper for `ru`, an English wrapper otherwise/for `auto` — and keep the existing behaviour tests green (`VocabularyTests`); day-1 docs under `docs/` written in Russian (spec/plan/notes from 2026-09-08): translate headings and body to English, keeping code and file names.
