@@ -73,6 +73,49 @@ final class SurfaceScreenshotTests: XCTestCase {
         report(failures)
     }
 
+    /// The menu-bar icon in its three looks, at 4× on a dark and a light bar,
+    /// so the brand mark can be checked at the size it actually ships at.
+    func testRendersMenuBarIcons() throws {
+        let directory = try outputDirectory()
+        let states: [(AppState, String)] = [(.idle, "idle"), (.recording, "recording"),
+                                           (.transcribing, "transcribing"), (.error(.modelNotLoaded), "error")]
+        for (dark, theme) in [(true, "dark"), (false, "light")] {
+            let appearance = NSAppearance(named: dark ? .darkAqua : .aqua)!
+            let scale: CGFloat = 4
+            let slot = StatusIcon.canvas.width + 10
+            let size = CGSize(width: (slot * CGFloat(states.count) + 10) * scale, height: 30 * scale)
+            let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size.width), pixelsHigh: Int(size.height),
+                                       bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                       colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+            NSGraphicsContext.saveGraphicsState()
+            NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+            appearance.performAsCurrentDrawingAppearance {
+                (dark ? NSColor(white: 0.16, alpha: 1) : NSColor(white: 0.93, alpha: 1)).setFill()
+                NSRect(origin: .zero, size: size).fill()
+                for (index, (state, _)) in states.enumerated() {
+                    let image = StatusIcon.image(for: state, appearance: appearance)
+                    let origin = NSPoint(x: (10 + slot * CGFloat(index)) * scale, y: (30 - StatusIcon.canvas.height) / 2 * scale)
+                    let frame = NSRect(origin: origin, size: NSSize(width: StatusIcon.canvas.width * scale, height: StatusIcon.canvas.height * scale))
+                    if image.isTemplate {
+                        // Template images are tinted by the system bar; emulate it with the label colour.
+                        let tinted = NSImage(size: image.size, flipped: false) { rect in
+                            image.draw(in: rect)
+                            (dark ? NSColor.white : NSColor.black).set()
+                            rect.fill(using: .sourceIn)
+                            return true
+                        }
+                        tinted.draw(in: frame)
+                    } else {
+                        image.draw(in: frame)
+                    }
+                }
+            }
+            NSGraphicsContext.restoreGraphicsState()
+            let data = rep.representation(using: .png, properties: [:])!
+            try data.write(to: directory.appendingPathComponent("menubar-\(theme).png"))
+        }
+    }
+
     // MARK: - Per-surface reporting
 
     /// Renders one surface inside an activity of its own, so the report names

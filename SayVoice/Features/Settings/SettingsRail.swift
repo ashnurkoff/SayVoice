@@ -49,9 +49,9 @@ struct LogoMark: View {
             .fill(LinearGradient(colors: [DS.Colors.accent.color, DS.Colors.accent2.color], startPoint: .topLeading, endPoint: .bottomTrailing))
             .frame(width: size, height: size)
             .overlay(
-                Image(systemName: "waveform")
-                    .font(.system(size: size * 0.45, weight: .semibold))
-                    .foregroundStyle(DS.Colors.onAccent.color)
+                WaveformMark()
+                    .fill(DS.Colors.onAccent.color)
+                    .frame(width: size * 0.56, height: size * 0.56 / WaveformMark.aspect)
             )
             .shadow(color: DS.Colors.glassShadow.color, radius: 6, x: 0, y: 3)
             .accessibilityLabel("SayVoice")

@@ -13,9 +13,9 @@ struct ArtPanel: View {
                            startPoint: .topLeading, endPoint: .bottomTrailing)
             VStack(spacing: DS.Space.s20) {
                 Spacer(minLength: 0)
-                Image(systemName: "waveform")
-                    .font(.system(size: 88, weight: .semibold))
-                    .foregroundStyle(DS.Colors.onAccent.color.opacity(0.95))
+                WaveformMark()
+                    .fill(DS.Colors.onAccent.color.opacity(0.95))
+                    .frame(width: 120, height: 120 / WaveformMark.aspect)
                 Text("SayVoice")
                     .font(DS.font(.title))
                     .foregroundStyle(DS.Colors.onAccent.color)

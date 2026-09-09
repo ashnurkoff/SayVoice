@@ -14,11 +14,11 @@ enum StatusIcon {
     static func image(for state: AppState, appearance: NSAppearance) -> NSImage {
         switch state {
         case .idle:
-            return glyph("mic.fill", description: "SayVoice")
+            return mark(description: "SayVoice")
         case .recording:
-            return micWithDot(DS.Colors.rec.resolved(for: appearance), description: "Recording")
+            return markWithDot(DS.Colors.rec.resolved(for: appearance), description: "Recording")
         case .transcribing, .injecting:
-            return micWithDot(DS.Colors.accent.resolved(for: appearance), description: "Transcribing")
+            return markWithDot(DS.Colors.accent.resolved(for: appearance), description: "Transcribing")
         case .error:
             return glyph("exclamationmark.triangle", description: "Needs attention")
         }
@@ -39,16 +39,32 @@ enum StatusIcon {
         return img
     }
 
-    /// The mic plus a coloured state dot. Not a template: template rendering is
-    /// monochrome and would swallow the dot's colour.
-    private static func micWithDot(_ dot: NSColor, description: String) -> NSImage {
+    /// The brand waveform sized like a 16 pt symbol, centred on the canvas.
+    private static var markRect: NSRect {
+        let width: CGFloat = 17
+        let height = width / WaveformMark.aspect
+        return NSRect(x: (canvas.width - width) / 2, y: (canvas.height - height) / 2, width: width, height: height)
+    }
+
+    /// The waveform on its own, as a template — the menu bar tints it.
+    private static func mark(description: String) -> NSImage {
+        let img = NSImage(size: canvas, flipped: false) { _ in
+            NSColor.black.setFill()
+            WaveformMark.bezierPath(in: markRect).fill()
+            return true
+        }
+        img.isTemplate = true
+        img.accessibilityDescription = description
+        return img
+    }
+
+    /// The waveform plus a coloured state dot. Not a template: template
+    /// rendering is monochrome and would swallow the dot's colour.
+    private static func markWithDot(_ dot: NSColor, description: String) -> NSImage {
         let img = NSImage(size: canvas, flipped: false) { rect in
             // labelColor is dynamic — white on a dark menu bar, black on a light one
-            let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
-                .applying(.init(paletteColors: [.labelColor]))
-            if let mic = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: nil)?.withSymbolConfiguration(config) {
-                draw(mic, centeredIn: rect)
-            }
+            NSColor.labelColor.setFill()
+            WaveformMark.bezierPath(in: markRect).fill()
             let d: CGFloat = 6.5
             dot.setFill()
             NSBezierPath(ovalIn: NSRect(x: rect.maxX - d, y: rect.maxY - d, width: d, height: d)).fill()
