@@ -17,6 +17,10 @@ struct Chip: View {
         Text(text)
             .font(DS.font(.valueSmall))
             .foregroundStyle(foreground)
+            // A chip is a label, not a paragraph: it keeps its one line and
+            // its ideal width instead of wrapping when the row runs short.
+            .lineLimit(1)
+            .fixedSize()
             .padding(.horizontal, DS.Space.s8)
             .padding(.vertical, 3)
             .background(Capsule().fill(fill))

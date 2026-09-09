@@ -15,7 +15,11 @@ struct ModelRow: View {
     let isSelected: Bool
     let isDownloaded: Bool
     let isHighlighted: Bool
+    /// Off where the row has no width to spare — the 400 pt onboarding window.
+    let showsQualityBar: Bool
     let download: DownloadState?
+    /// Passed to `DownloadProgress`: only one row on a screen may be primary.
+    let downloadIsProminent: Bool
     let onSelect: () -> Void
     let onDownload: () -> Void
     let onCancel: () -> Void
@@ -23,14 +27,16 @@ struct ModelRow: View {
 
     init(
         name: String, badge: String? = nil, badgeIsAccent: Bool = false, qualitySteps: Int, sizeText: String,
-        isSelected: Bool, isDownloaded: Bool, isHighlighted: Bool = false, download: DownloadState?,
+        isSelected: Bool, isDownloaded: Bool, isHighlighted: Bool = false, showsQualityBar: Bool = true,
+        download: DownloadState?, downloadIsProminent: Bool = true,
         onSelect: @escaping () -> Void, onDownload: @escaping () -> Void,
         onCancel: @escaping () -> Void, onRetry: @escaping () -> Void
     ) {
         self.name = name; self.badge = badge; self.badgeIsAccent = badgeIsAccent
         self.qualitySteps = qualitySteps; self.sizeText = sizeText
         self.isSelected = isSelected; self.isDownloaded = isDownloaded; self.isHighlighted = isHighlighted
-        self.download = download
+        self.showsQualityBar = showsQualityBar
+        self.download = download; self.downloadIsProminent = downloadIsProminent
         self.onSelect = onSelect; self.onDownload = onDownload; self.onCancel = onCancel; self.onRetry = onRetry
     }
 
@@ -48,7 +54,7 @@ struct ModelRow: View {
                     if let badge {
                         Chip(badge, style: badgeIsAccent ? .accent : .neutral)
                     }
-                    qualityBar
+                    if showsQualityBar { qualityBar }
                     Spacer(minLength: DS.Space.s12)
                     if isDownloaded {
                         Chip("downloaded", style: .ok)
@@ -60,7 +66,8 @@ struct ModelRow: View {
             .buttonStyle(.plain)
 
             if let download, !isDownloaded {
-                DownloadProgress(state: download, onStart: onDownload, onCancel: onCancel, onRetry: onRetry)
+                DownloadProgress(state: download, prominent: downloadIsProminent,
+                                 onStart: onDownload, onCancel: onCancel, onRetry: onRetry)
                     .padding(.leading, 28)   // aligns with the name, past the indicator
             }
         }

@@ -24,6 +24,9 @@ struct ModelStep: View {
                         // it is not on disk yet" — the same signal Settings
                         // shows when transcription finds the model missing.
                         isHighlighted: isSelected && !isDownloaded,
+                        // 400 pt leaves no room for the bar next to the name
+                        // and the chips; Settings keeps it.
+                        showsQualityBar: false,
                         // The download control is a line of its own below the
                         // list, not one per row: three of them do not fit a
                         // 360 pt window, and its status line needs the width.
@@ -36,6 +39,7 @@ struct ModelStep: View {
                 }
                 if let download {
                     DownloadProgress(state: download,
+                                     prominent: true,
                                      onStart: { model.downloads.start(target) },
                                      onCancel: { model.downloads.cancel(target) },
                                      onRetry: { model.downloads.start(target) })

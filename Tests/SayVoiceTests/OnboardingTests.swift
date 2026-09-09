@@ -161,6 +161,66 @@ final class OnboardingTests: XCTestCase {
         XCTAssertTrue(OnboardingModel.offeredModels.contains(makeFirstRunModel(granted: true).downloadTarget))
     }
 
+    /// The permission poll is stopped by the coordinator's `willClose`
+    /// observer, which is filtered by the onboarding window. The unfiltered
+    /// observer this replaced lived in `OnboardingView` and stopped the poll
+    /// whenever *any* window of the app closed — the settings window included.
+    func testAnUnrelatedWindowClosingDoesNotStopTheOnboardingPoll() {
+        let model = makeFirstRunModel(granted: false)
+        model.startPolling()
+        XCTAssertTrue(model.isPolling, "precondition: the poll is running")
+
+        let host = NSHostingView(rootView: OnboardingView(model: model, onHotkeyChanged: nil, onHotkeyModeChanged: nil))
+        host.frame = CGRect(origin: .zero, size: OnboardingView.windowSize)
+        host.layoutSubtreeIfNeeded()
+
+        let other = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
+                             styleMask: [.titled], backing: .buffered, defer: true)
+        NotificationCenter.default.post(name: NSWindow.willCloseNotification, object: other)
+
+        XCTAssertTrue(model.isPolling, "another window's close must not stop the onboarding poll")
+        model.stopPolling()
+    }
+
+    /// The squeeze the 400 pt window produced before the quality bar came off
+    /// the onboarding rows: the name truncated and the chips wrapped. Measured
+    /// at the row's *ideal* width — `lineLimit(1)` lets `fittingSize` report a
+    /// truncated row as fitting, so only `fixedSize` exposes the overflow.
+    func testModelStepRowsFitWithoutTruncatingTheName() {
+        let manager = ModelManager(modelsDirectory: temporaryModelsDirectory())
+        // StepLayout's 20 pt padding on each side is all that stands between
+        // the row and the pane the art panel leaves.
+        let available = OnboardingView.stepWidth - 2 * DS.Space.s20
+
+        for size in OnboardingModel.offeredModels {
+            for selected in [true, false] {
+                for dark in [true, false] {
+                    let row = ModelRow(
+                        name: size.displayName,
+                        badge: size == .recommended ? "recommended" : nil,
+                        badgeIsAccent: size == .recommended,
+                        qualitySteps: size.qualitySteps,
+                        sizeText: size.sizeText,
+                        isSelected: selected,
+                        isDownloaded: manager.isModelAvailable(size),
+                        isHighlighted: selected && !manager.isModelAvailable(size),
+                        showsQualityBar: false,
+                        download: nil,
+                        onSelect: {}, onDownload: {}, onCancel: {}, onRetry: {}
+                    )
+                    let host = NSHostingView(rootView: AnyView(row.fixedSize()))
+                    host.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+                    host.layoutSubtreeIfNeeded()
+                    XCTAssertLessThanOrEqual(
+                        host.fittingSize.width, available,
+                        "\(size.displayName) [\(selected ? "selected" : "plain"), \(dark ? "dark" : "light")] "
+                        + "wants \(host.fittingSize.width) pt of \(available)"
+                    )
+                }
+            }
+        }
+    }
+
     private func assertFits(_ step: OnboardingStep, of model: OnboardingModel, dark: Bool, note: String,
                             file: StaticString = #filePath, line: UInt = #line) {
         let view = OnboardingView(model: model, onHotkeyChanged: nil, onHotkeyModeChanged: nil)

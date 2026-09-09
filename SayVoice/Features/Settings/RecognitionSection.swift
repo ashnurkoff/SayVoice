@@ -24,6 +24,9 @@ struct RecognitionSection: View {
                                 isDownloaded: modelManager.isModelAvailable(model),
                                 isHighlighted: router.highlightedModel == model,
                                 download: downloads.state(for: model),
+                                // At most one primary per screen: the row the
+                                // user has actually picked.
+                                downloadIsProminent: settings.modelSize == model.settingsString,
                                 onSelect: {
                                     settings.modelSize = model.settingsString
                                     router.highlightedModel = nil

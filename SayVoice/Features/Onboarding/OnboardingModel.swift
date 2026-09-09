@@ -123,4 +123,8 @@ final class OnboardingModel {
         pollTask?.cancel()
         pollTask = nil
     }
+
+    /// Whether the permission poll is running. Read by the tests that check
+    /// which window closing is allowed to stop it.
+    var isPolling: Bool { pollTask != nil }
 }

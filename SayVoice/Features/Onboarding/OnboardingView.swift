@@ -22,12 +22,9 @@ struct OnboardingView: View {
         .frame(width: Self.windowSize.width, height: Self.windowSize.height)
         .background(DS.Colors.ground.color)
         .font(DS.font(.body))
-        // Closing the window from its own close button skips every step's
-        // onDisappear, and the permission poll must not outlive it. Onboarding
-        // is the only window open at this point, so no filtering is needed.
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { _ in
-            model.stopPolling()
-        }
+        // The permission poll is stopped by the coordinator, which observes
+        // `willClose` on the onboarding window itself. An unfiltered observer
+        // here would fire for any window the app ever closes.
     }
 
     @ViewBuilder

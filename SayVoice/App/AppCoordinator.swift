@@ -29,6 +29,9 @@ final class AppCoordinator {
     /// длится долго, и за это время легко переключиться на другое окно.
     private var recordingTargetApp: NSRunningApplication?
     private var onboardingWindow: NSWindow?
+    /// `willClose` observer for the onboarding window, filtered by that
+    /// window so no other window's close can trip it.
+    private var onboardingCloseObserver: NSObjectProtocol?
 
     func start() {
         menuBarController = MenuBarController(status: status)
@@ -327,6 +330,7 @@ final class AppCoordinator {
             onFinished: { [weak self] in
                 guard let self else { return }
                 self.settingsStore.hasCompletedOnboarding = true
+                self.removeOnboardingCloseObserver()
                 self.onboardingWindow?.close()
                 self.onboardingWindow = nil
                 print("[SayVoice] Onboarding complete — starting normal flow")
@@ -342,8 +346,26 @@ final class AppCoordinator {
             onHotkeyModeChanged: { [weak self] isToggle in self?.hotkeyListener?.apply(isToggle: isToggle) }
         )
         let window = AppWindow.make(title: "Welcome to SayVoice", size: OnboardingView.windowSize, content: view)
+        // Closing the window from its own close button skips every step's
+        // onDisappear, and the permission poll must not outlive it. Filtered by
+        // `object`, so only this window counts.
+        onboardingCloseObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification, object: window, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                model.stopPolling()
+                self?.removeOnboardingCloseObserver()
+                self?.onboardingWindow = nil
+            }
+        }
         AppWindow.present(window)
         onboardingWindow = window
+    }
+
+    private func removeOnboardingCloseObserver() {
+        guard let token = onboardingCloseObserver else { return }
+        NotificationCenter.default.removeObserver(token)
+        onboardingCloseObserver = nil
     }
 
     // MARK: - Sound Feedback

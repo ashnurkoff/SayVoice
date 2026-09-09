@@ -14,12 +14,17 @@ enum DownloadState: Equatable {
 /// "Downloaded" chip. Used by the settings model list and by onboarding.
 struct DownloadProgress: View {
     let state: DownloadState
+    /// Whether the idle Download button is the screen's primary action. A list
+    /// of these renders one primary at most (spec 3.1); the rest are secondary.
+    let prominent: Bool
     let onStart: () -> Void
     let onCancel: () -> Void
     let onRetry: () -> Void
 
-    init(state: DownloadState, onStart: @escaping () -> Void, onCancel: @escaping () -> Void, onRetry: @escaping () -> Void) {
+    init(state: DownloadState, prominent: Bool = true, onStart: @escaping () -> Void,
+         onCancel: @escaping () -> Void, onRetry: @escaping () -> Void) {
         self.state = state
+        self.prominent = prominent
         self.onStart = onStart
         self.onCancel = onCancel
         self.onRetry = onRetry
@@ -30,7 +35,11 @@ struct DownloadProgress: View {
         case .idle:
             HStack {
                 Spacer(minLength: 0)
-                Button("Download", action: onStart).buttonStyle(.dsPrimary)
+                if prominent {
+                    Button("Download", action: onStart).buttonStyle(.dsPrimary)
+                } else {
+                    Button("Download", action: onStart).buttonStyle(.dsSecondary)
+                }
             }
 
         case let .running(fraction, speed, eta):
