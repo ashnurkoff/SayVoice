@@ -1697,7 +1697,7 @@ git commit -m "Add the Recognition section: model rows with in-place download, l
 - Modify: `SayVoice/Features/Settings/SettingsView.swift` (routes; remove `PlaceholderSection`)
 - Modify: `SayVoice/App/AppCoordinator.swift` (own `AppStatus`/`SettingsRouter`/`ModelDownloads`; `showSettings(section:highlight:)`; remove `showModelDownloadWindow` and `downloadWindow`; update `state` to `status`; model-missing paths)
 - Modify: `SayVoice/UI/MenuBarController.swift` (remove the download item and callback)
-- Delete: `SayVoice/UI/SettingsView.swift`, `SayVoice/ModelManagement/ModelDownloadView.swift`
+- Delete: `SayVoice/UI/LegacySettingsView.swift` (the old settings view, renamed in Task 6), `SayVoice/ModelManagement/ModelDownloadView.swift`
 - Test: append to `SettingsRenderTests`
 
 **Interfaces:**
@@ -1972,7 +1972,7 @@ In `SayVoice/UI/MenuBarController.swift`: delete the `downloadItem` three lines 
 - [ ] **Step 5: Delete the old views**
 
 ```bash
-git rm -q SayVoice/UI/SettingsView.swift SayVoice/ModelManagement/ModelDownloadView.swift
+git rm -q SayVoice/UI/LegacySettingsView.swift SayVoice/ModelManagement/ModelDownloadView.swift
 ```
 
 - [ ] **Step 6: Generate, build, test — expect PASS** (`Executed 56 tests`).
