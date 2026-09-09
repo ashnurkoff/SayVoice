@@ -40,4 +40,12 @@ final class ComponentRenderTests: XCTestCase {
         XCTAssertGreaterThan(renderSize(Button("Copy") {}.buttonStyle(.dsLink)).height, 14)
         XCTAssertGreaterThan(renderSize(Button("Clear…") {}.buttonStyle(.dsDestructive)).height, 14)
     }
+
+    func testOrbRendersEveryState() {
+        for state in [Orb.State.idle, .recording, .transcribing, .done, .error] {
+            let s = renderSize(Orb(state: state))
+            XCTAssertEqual(s.width, DS.Size.orb + 10, accuracy: 0.5, "orb frame includes the 5pt halo ring")
+            XCTAssertEqual(s.height, DS.Size.orb + 10, accuracy: 0.5)
+        }
+    }
 }

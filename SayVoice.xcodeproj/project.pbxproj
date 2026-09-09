@@ -23,6 +23,7 @@
 		256244A5CBBEB17256224333 /* HotkeyEventDecisionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D4F45FC49D8B1E72D923CC /* HotkeyEventDecisionTests.swift */; };
 		2A297CC4784844B117B37A83 /* FontsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 390220034D196834BBB73BF8 /* FontsTests.swift */; };
 		2AE491BF33078D918C730B6A /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 611A67ADB66D7C5956E104ED /* Colors.swift */; };
+		2B43818DB3DA7B8096E33EB6 /* Orb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0499C125D53AE37B4D2E062E /* Orb.swift */; };
 		2DCE7A21BCB9625EA921E33E /* DesignTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA16E63693CBD6B6818FDD9 /* DesignTokensTests.swift */; };
 		45D29304D548463A47481F2B /* HotkeyListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C6D1846F6A89D7FEE29D26 /* HotkeyListener.swift */; };
 		46142A0459E73A5A3731C85E /* TextInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 435EA3FEEB95FDAC451A3F5A /* TextInjector.swift */; };
@@ -68,6 +69,7 @@
 
 /* Begin PBXFileReference section */
 		03F7A9ADE4B1E354F14E0F16 /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
+		0499C125D53AE37B4D2E062E /* Orb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Orb.swift; sourceTree = "<group>"; };
 		0AD5E2802B500CCC9890B58A /* SayVoice.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SayVoice.entitlements; sourceTree = "<group>"; };
 		0CE3E78B5078DB6EA1AB3B60 /* SettingsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsKeys.swift; sourceTree = "<group>"; };
 		0FFEDFC408C13DBE86405472 /* TranscriptionHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionHistoryStore.swift; sourceTree = "<group>"; };
@@ -292,6 +294,7 @@
 				EFA389FB49147E0383FD4E19 /* Buttons.swift */,
 				7980D7E64D5BDD4719957C7A /* Chip.swift */,
 				5DD8846E2B0AD43605E5424A /* KeyCap.swift */,
+				0499C125D53AE37B4D2E062E /* Orb.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -450,6 +453,7 @@
 				E1EF13CF6778866393201F18 /* ModelManager.swift in Sources */,
 				1ABFFA8F664A6AEBA304F64B /* Motion.swift in Sources */,
 				5B8573296AE4682592CBDCF6 /* OnboardingView.swift in Sources */,
+				2B43818DB3DA7B8096E33EB6 /* Orb.swift in Sources */,
 				7CCC8D473FE91839018C77CB /* OverlayModel.swift in Sources */,
 				00F7AE07DB1F5991829C2F33 /* OverlayView.swift in Sources */,
 				9AA337295256DA5D70E0CF9F /* OverlayWindowController.swift in Sources */,
