@@ -94,11 +94,13 @@ actor TranscriptionEngine {
     /// Builds the initial_prompt from the user's dictionary.
     /// An empty dictionary yields the punctuation instruction alone.
     ///
-    /// - Parameter language: the whisper language code. `ru` gets the Russian
-    ///   wrapper; `en` — and `auto`, where the language is not known yet — get
-    ///   the English one, because the language the prompt is written in biases
-    ///   the decoder towards that language.
-    static func initialPrompt(vocabulary: String?, language: String = "auto") -> String {
+    /// - Parameter language: the whisper language code, already resolved —
+    ///   never `auto`. `ru` gets the Russian wrapper and `en` the English one;
+    ///   any other language gets no prompt at all, because a prompt written in
+    ///   the wrong language biases the decoder towards that language (an
+    ///   English prompt on Russian speech made whisper translate it).
+    static func initialPrompt(vocabulary: String?, language: String) -> String {
+        guard language == "ru" || language == "en" else { return "" }
         let russian = language == "ru"
         let hint = russian ? russianPunctuationHint : punctuationHint
         let vocab = (vocabulary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -127,13 +129,25 @@ actor TranscriptionEngine {
             throw TranscriptionError.modelNotLoaded
         }
 
+        // With `auto`, whisper would see the prompt before it knows the
+        // language, and the prompt's language wins. So detect first, then
+        // decode with the language pinned and a prompt written in it.
+        let resolvedLanguage: String
+        if language == "auto" {
+            resolvedLanguage = await transcriber.detectLanguage(samples) ?? "auto"
+            print("[SayVoice] Detected language: \(resolvedLanguage)")
+        } else {
+            resolvedLanguage = language
+        }
+        let prompt = Self.initialPrompt(vocabulary: vocabularyPrompt, language: resolvedLanguage)
+
         return try await withThrowingTaskGroup(of: String.self) { group in
             group.addTask {
                 try await transcriber.transcribe(
                     samples,
-                    language: language,
+                    language: resolvedLanguage,
                     beamSize: Self.beamSize,
-                    initialPrompt: Self.initialPrompt(vocabulary: vocabularyPrompt, language: language)
+                    initialPrompt: prompt
                 )
             }
             let timeout = Self.timeoutSeconds(forSampleCount: samples.count)

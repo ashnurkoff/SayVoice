@@ -20,4 +20,9 @@ public final class WhisperTranscriber: Sendable {
             initialPrompt: initialPrompt
         )
     }
+
+    /// See `WhisperContext.detectLanguage(samples:)`.
+    public func detectLanguage(_ samples: [Float]) async -> String? {
+        await context.detectLanguage(samples: samples)
+    }
 }

@@ -120,6 +120,19 @@ char* whisper_bridge_transcribe(
     return cstr;
 }
 
+const char* whisper_bridge_detect_language(
+    whisper_context* ctx,
+    const float*     samples,
+    int32_t          n_samples,
+    int              n_threads
+) {
+    if (!ctx || !samples || n_samples <= 0) return nullptr;
+    if (whisper_pcm_to_mel(ctx, samples, n_samples, n_threads) != 0) return nullptr;
+    const int lang_id = whisper_lang_auto_detect(ctx, 0, n_threads, nullptr);
+    if (lang_id < 0) return nullptr;
+    return whisper_lang_str(lang_id);
+}
+
 void whisper_bridge_free_string(char* str) {
     delete[] str;
 }

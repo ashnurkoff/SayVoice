@@ -14,12 +14,12 @@ final class VocabularyTests: XCTestCase {
     }
 
     func testEmptyVocabularyYieldsOnlyThePunctuationHint() {
-        XCTAssertEqual(TranscriptionEngine.initialPrompt(vocabulary: ""), TranscriptionEngine.punctuationHint)
-        XCTAssertEqual(TranscriptionEngine.initialPrompt(vocabulary: nil), TranscriptionEngine.punctuationHint)
+        XCTAssertEqual(TranscriptionEngine.initialPrompt(vocabulary: "", language: "en"), TranscriptionEngine.punctuationHint)
+        XCTAssertEqual(TranscriptionEngine.initialPrompt(vocabulary: nil, language: "en"), TranscriptionEngine.punctuationHint)
     }
 
     func testVocabularyIsWrappedInASentenceWithTheHintLast() {
-        let p = TranscriptionEngine.initialPrompt(vocabulary: "API, Xcode")
+        let p = TranscriptionEngine.initialPrompt(vocabulary: "API, Xcode", language: "en")
         XCTAssertTrue(p.contains("API, Xcode."), "terms must end with a period so the model sees punctuated text")
         XCTAssertTrue(p.hasSuffix(TranscriptionEngine.punctuationHint), "hint goes last: whisper keeps the tail of an over-long prompt")
     }
@@ -36,15 +36,24 @@ final class VocabularyTests: XCTestCase {
                        TranscriptionEngine.russianPunctuationHint, "an empty dictionary leaves the hint alone")
     }
 
-    /// English, and auto — where the language is not known yet — must never be
-    /// given a Russian wrapper: that is what turned English speech into Russian.
-    func testEnglishAndAutoUseTheEnglishWrapper() {
-        for language in ["en", "auto"] {
-            let p = TranscriptionEngine.initialPrompt(vocabulary: "API, Xcode", language: language)
-            XCTAssertTrue(p.hasSuffix(TranscriptionEngine.punctuationHint), language)
-            XCTAssertFalse(p.contains(TranscriptionEngine.russianPunctuationHint), language)
-            XCTAssertEqual(TranscriptionEngine.initialPrompt(vocabulary: nil, language: language),
-                           TranscriptionEngine.punctuationHint, language)
+    /// English gets the English wrapper and never the Russian one: a Russian
+    /// wrapper on English speech turned it into Russian.
+    func testEnglishUsesTheEnglishWrapper() {
+        let p = TranscriptionEngine.initialPrompt(vocabulary: "API, Xcode", language: "en")
+        XCTAssertTrue(p.hasSuffix(TranscriptionEngine.punctuationHint))
+        XCTAssertFalse(p.contains(TranscriptionEngine.russianPunctuationHint))
+        XCTAssertEqual(TranscriptionEngine.initialPrompt(vocabulary: nil, language: "en"),
+                       TranscriptionEngine.punctuationHint)
+    }
+
+    /// A prompt written in the wrong language biases the decoder towards that
+    /// language — an English wrapper on Russian speech made whisper translate
+    /// it. So the engine resolves `auto` by detecting the language first, and
+    /// any language without a wrapper of its own gets no prompt at all.
+    func testUnknownAndUnwrappedLanguagesGetNoPrompt() {
+        for language in ["auto", "de", "fr", "uk"] {
+            XCTAssertEqual(TranscriptionEngine.initialPrompt(vocabulary: "API, Xcode", language: language), "", language)
+            XCTAssertEqual(TranscriptionEngine.initialPrompt(vocabulary: nil, language: language), "", language)
         }
     }
 
@@ -60,10 +69,8 @@ final class VocabularyTests: XCTestCase {
         let ruLead = String(ru[ru.startIndex..<ru.range(of: "API")!.lowerBound])
         XCTAssertTrue(Self.containsCyrillic(ruLead), "the Russian wrapper must introduce the terms in Russian")
 
-        for language in ["en", "auto"] {
-            let p = TranscriptionEngine.initialPrompt(vocabulary: "API, Xcode", language: language)
-            XCTAssertFalse(Self.containsCyrillic(p), "\(language): an English prompt must hold no Cyrillic at all")
-        }
+        let en = TranscriptionEngine.initialPrompt(vocabulary: "API, Xcode", language: "en")
+        XCTAssertFalse(Self.containsCyrillic(en), "an English prompt must hold no Cyrillic at all")
     }
 
     /// Cyrillic and Cyrillic Supplement — enough for the two wrappers.

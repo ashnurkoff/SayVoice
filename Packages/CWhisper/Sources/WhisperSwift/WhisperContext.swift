@@ -69,6 +69,18 @@ public actor WhisperContext {
         return String(cString: rawResult)
     }
 
+    /// The language whisper hears in the first 30 seconds, as a whisper code
+    /// ("ru", "en", …), or nil when it cannot tell.
+    public func detectLanguage(samples: [Float]) -> String? {
+        guard let ctx, !samples.isEmpty else { return nil }
+        let threads = Int32(max(1, ProcessInfo.processInfo.processorCount - 2))
+        let code: UnsafePointer<CChar>? = samples.withUnsafeBufferPointer { ptr in
+            whisper_bridge_detect_language(ctx, ptr.baseAddress, Int32(samples.count), threads)
+        }
+        guard let code else { return nil }
+        return String(cString: code)
+    }
+
     deinit {
         if let ctx {
             whisper_bridge_free(ctx)

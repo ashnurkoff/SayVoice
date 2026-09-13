@@ -31,6 +31,16 @@ char* whisper_bridge_transcribe(
 );
 void whisper_bridge_free_string(char* str);
 
+// Detects the spoken language from the first 30 seconds of audio.
+// Returns a whisper language code ("ru", "en", ...) owned by whisper — do not free —
+// or NULL when detection fails.
+const char* whisper_bridge_detect_language(
+    whisper_context* ctx,
+    const float*     samples,
+    int32_t          n_samples,
+    int              n_threads
+);
+
 #ifdef __cplusplus
 }
 #endif
